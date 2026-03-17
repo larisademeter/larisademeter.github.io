@@ -148,3 +148,8 @@ footer {
         display: none; /* simplu pentru început */
     }
 }
+
+.hero-media {
+    display: none;
+}
+
