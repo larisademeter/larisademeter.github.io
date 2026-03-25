@@ -6,6 +6,15 @@
   <title>Solicită Intervenție | L.D. Service Medical</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+  <script>
+  const menuToggle = document.querySelector('.menu-toggle');
+  const mainNav = document.querySelector('.main-nav');
+
+  menuToggle.addEventListener('click', () => {
+    menuToggle.classList.toggle('active');
+    mainNav.classList.toggle('active');
+  });
+</script>
 <body>
 
   <header>
