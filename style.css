@@ -1,48 +1,40 @@
 /* =========================================
-   1. PALETĂ VIBRANTĂ & NEON
+   1. PALETĂ REVIZUITĂ: PASTEL & VIBRANT
    ========================================= */
 :root {
-    --primary: #8b5cf6;       /* Mov Electric */
-    --secondary: #ec4899;     /* Roz Neon */
-    --turquoise: #06b6d4;     /* Turcoaz/Cyan */
-    --dark: #1e1b4b;          /* Indigo foarte închis (pentru text) */
-    --light-bg: #f5f3ff;      /* Fundal foarte ușor mov */
-    --white: #ffffff;
-    --grad-vibrant: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #06b6d4 100%);
-    --grad-btn: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%);
-    --shadow-vibrant: 0 10px 25px rgba(236, 72, 153, 0.3);
-    --transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --primary: #8b5cf6;
+    --secondary: #ec4899;
+    --turquoise: #06b6d4;
+    --header-bg: #f5f3ff;      /* Lavandă pastel pentru Header */
+    --body-bg: #ffffff;
+    --dark-text: #1e1b4b;
+    --light-text: #64748b;
+    --grad-vibrant: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --transition: 0.3s ease;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
     font-family: 'Segoe UI', system-ui, sans-serif;
-    color: var(--dark);
-    background-color: var(--white);
+    color: var(--dark-text);
+    background-color: var(--body-bg);
     line-height: 1.6;
 }
 
-.container {
-    width: 90%;
-    max-width: 1200px;
-    margin: auto;
-}
+.container { width: 90%; max-width: 1100px; margin: auto; }
 
 /* =========================================
-   2. HEADER & LOGO
+   2. HEADER COMPACT & PASTEL
    ========================================= */
 header {
-    background: var(--white);
-    padding: 1.2rem 0;
+    background: var(--header-bg); /* Culoare pastel deschisă */
+    padding: 0.5rem 0;           /* Header mult mai mic */
     position: sticky;
     top: 0;
-    box-shadow: 0 4px 30px rgba(139, 92, 246, 0.1);
     z-index: 1000;
+    box-shadow: var(--shadow-soft);
 }
 
 .header-content {
@@ -52,260 +44,116 @@ header {
 }
 
 .logo { 
-    height: 110px; 
+    height: 65px;               /* Logo redimensionat pentru header mic */
     width: auto;
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.1));
 }
 
-.main-nav {
-    display: flex;
-    align-items: center;
-    gap: 25px;
-}
+.main-nav { display: flex; align-items: center; gap: 20px; }
 
 .main-nav a {
     text-decoration: none;
-    color: var(--dark);
+    color: var(--primary);
     font-weight: 700;
+    font-size: 0.85rem;         /* Scris mai mic în navigație */
     text-transform: uppercase;
-    font-size: 0.9rem;
-    letter-spacing: 0.5px;
     transition: var(--transition);
 }
 
-.main-nav a:hover {
-    color: var(--secondary);
-}
-
-.btn-login {
-    border: 2px solid var(--primary);
-    padding: 10px 25px;
-    border-radius: 50px;
-    color: var(--primary) !important;
-}
-
-.btn-login:hover {
-    background: var(--primary);
-    color: white !important;
-    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
-}
+.main-nav a:hover { color: var(--secondary); }
 
 .btn-nav-contact {
-    background: var(--grad-btn);
+    background: var(--grad-vibrant);
     color: white !important;
-    padding: 12px 30px;
+    padding: 8px 20px;
     border-radius: 50px;
-    box-shadow: var(--shadow-vibrant);
 }
 
 /* =========================================
-   3. HERO SECTION (Vibrant)
+   3. HERO (Text Optimizat)
    ========================================= */
 .hero-vibrance {
-    padding: 140px 0;
-    background: var(--light-bg);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Adăugăm un efect de cerc colorat în fundal */
-.hero-vibrance::before {
-    content: '';
-    position: absolute;
-    top: -10%;
-    right: -5%;
-    width: 400px;
-    height: 400px;
-    background: var(--turquoise);
-    filter: blur(150px);
-    opacity: 0.15;
-    z-index: 0;
+    padding: 80px 0;
+    text-align: center;
+    background: white;
 }
 
 .hero-title {
-    font-size: 4rem;
-    font-weight: 900;
-    margin-bottom: 20px;
+    font-size: 2.8rem;          /* Scris mai echilibrat */
+    font-weight: 800;
+    margin-bottom: 15px;
     background: var(--grad-vibrant);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    position: relative;
-    z-index: 1;
 }
 
 .hero-subtitle {
-    font-size: 1.3rem;
-    color: var(--dark);
-    max-width: 750px;
-    margin: 0 auto 40px;
-    font-weight: 500;
+    font-size: 1.1rem;          /* Scris mai mic și elegant */
+    max-width: 800px;
+    margin: 0 auto 30px;
+    color: var(--light-text);
 }
 
 .btn-hero {
-    display: inline-block;
-    padding: 20px 50px;
-    background: var(--grad-btn);
+    padding: 15px 35px;
+    background: var(--grad-vibrant);
     color: white;
     text-decoration: none;
     border-radius: 50px;
-    font-weight: 800;
-    font-size: 1.2rem;
-    box-shadow: 0 15px 35px rgba(236, 72, 153, 0.4);
-    transition: var(--transition);
-}
-
-.btn-hero:hover {
-    transform: translateY(-5px) scale(1.05);
+    font-weight: 700;
+    box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2);
+    display: inline-block;
 }
 
 /* =========================================
-   4. ECHIPA & DESPRE (Culori Vii)
+   4. SERVICII (Conținut Nou)
    ========================================= */
-.about-highlight {
-    padding: 100px 0;
-    background: var(--dark);
-    color: white;
-    text-align: center;
-}
+.section { padding: 70px 0; text-align: center; }
 
-.about-highlight h2 {
-    color: var(--turquoise);
-    font-size: 3rem;
-    margin-bottom: 30px;
-    text-transform: uppercase;
-}
-
-.about-highlight p {
-    font-size: 1.3rem;
-    max-width: 900px;
-    margin: 0 auto;
-    line-height: 1.8;
-    color: #e0e7ff;
-}
-
-/* =========================================
-   5. SERVICII (Carduri Turcoaz & Mov)
-   ========================================= */
-.section { padding: 100px 0; text-align: center; }
-
-h2 { font-size: 3rem; font-weight: 800; color: var(--primary); }
-
-.divider {
-    width: 100px;
-    height: 6px;
-    background: var(--grad-vibrant);
-    margin: 20px auto 50px;
-    border-radius: 10px;
-}
+h2 { font-size: 2.2rem; margin-bottom: 10px; color: var(--primary); }
 
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 40px;
+    gap: 25px;
+    margin-top: 40px;
 }
 
 .card {
     background: white;
-    padding: 60px 40px;
-    border-radius: 40px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-    border: 2px solid transparent;
+    padding: 40px 30px;
+    border-radius: 25px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid #f1f5f9;
     transition: var(--transition);
 }
 
-.card:hover {
-    transform: translateY(-15px);
-    border-color: var(--turquoise);
-    box-shadow: 0 30px 60px rgba(6, 182, 212, 0.15);
-}
+.card:hover { transform: translateY(-5px); border-color: var(--turquoise); }
 
-.card-icon { font-size: 4rem; margin-bottom: 25px; display: block; }
-.card h3 { color: var(--primary); font-size: 1.5rem; margin-bottom: 15px; }
+.card h3 { font-size: 1.3rem; margin-bottom: 15px; color: var(--secondary); }
 
-/* Fundaluri Carduri */
-.card-accent-1 { background: linear-gradient(to bottom, #ffffff, #f5f3ff); }
-.card-accent-2 { background: linear-gradient(to bottom, #ffffff, #ecfdf5); }
-.card-accent-3 { background: linear-gradient(to bottom, #ffffff, #f0f9ff); }
+.card p { font-size: 0.95rem; color: var(--light-text); }
 
 /* =========================================
-   6. CONTACT FORM (Vibrant)
+   5. CONTACT FORM & FOOTER
    ========================================= */
 .form-wrapper {
-    max-width: 700px;
+    max-width: 650px;
     margin: 0 auto;
     background: white;
-    padding: 60px;
-    border-radius: 40px;
-    box-shadow: 0 30px 70px rgba(139, 92, 246, 0.15);
-    text-align: left;
+    padding: 40px;
+    border-radius: 30px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
 }
 
-.subtitle-form {
-    color: var(--secondary);
-    font-weight: 800;
-    font-size: 1.2rem;
-    margin-bottom: 35px;
-    border-left: 6px solid var(--turquoise);
-    padding-left: 20px;
-}
-
-.form-group label {
-    font-weight: 700;
-    color: var(--dark);
-    font-size: 1rem;
-}
-
-.form-group input, .form-group select, .form-group textarea {
-    width: 100%;
-    padding: 16px 20px;
-    border: 2px solid #eef2ff;
-    border-radius: 20px;
-    background: #f8faff;
-    font-size: 1rem;
-    transition: 0.3s;
-}
-
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-    outline: none;
-    border-color: var(--turquoise);
-    background: white;
-    box-shadow: 0 0 0 5px rgba(6, 182, 212, 0.1);
-}
-
-.btn-full {
-    width: 100%;
-    padding: 20px;
-    background: var(--grad-vibrant);
-    color: white;
-    border: none;
-    border-radius: 20px;
-    font-weight: 800;
-    font-size: 1.3rem;
-    cursor: pointer;
-    box-shadow: var(--shadow-vibrant);
-    transition: var(--transition);
-}
-
-.btn-full:hover {
-    transform: scale(1.02);
-    filter: brightness(1.1);
-}
-
-/* =========================================
-   7. FOOTER
-   ========================================= */
 footer {
-    background: var(--grad-vibrant);
+    background: var(--dark-text);
     color: white;
-    padding: 60px 0;
+    padding: 40px 0;
     text-align: center;
+    font-size: 0.85rem;
 }
 
-footer p { font-weight: 700; letter-spacing: 1px; }
-
-/* Responsive */
 @media (max-width: 768px) {
-    .hero-title { font-size: 2.8rem; }
-    .logo { height: 80px; }
-    .main-nav { display: none; }
+    .hero-title { font-size: 2.2rem; }
+    .logo { height: 50px; }
 }
