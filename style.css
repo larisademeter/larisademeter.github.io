@@ -1,3 +1,6 @@
+/* =========================================
+   1. CONFIGURAȚIE ȘI VARIABILE
+   ========================================= */
 :root {
     --primary: #a05cff;
     --secondary: #ff7ac7;
@@ -5,6 +8,7 @@
     --light: #faf5ff;
     --white: #ffffff;
     --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --transition: 0.3s ease;
 }
 
 * {
@@ -13,7 +17,9 @@
     box-sizing: border-box;
 }
 
-html { scroll-behavior: smooth; }
+html { 
+    scroll-behavior: smooth; 
+}
 
 body {
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -28,10 +34,12 @@ body {
     margin: auto;
 }
 
-/* HEADER */
+/* =========================================
+   2. HEADER & NAVIGAȚIE
+   ========================================= */
 header {
     background: var(--white);
-    padding: 1rem 0;
+    padding: 0.8rem 0;
     position: sticky;
     top: 0;
     box-shadow: 0 2px 15px rgba(0,0,0,0.03);
@@ -44,53 +52,82 @@ header {
     align-items: center;
 }
 
-.logo { height: 50px; }
+.logo { 
+    height: 80px; 
+    width: auto;
+    transition: var(--transition);
+}
+
+.main-nav {
+    display: flex;
+    align-items: center;
+}
 
 .main-nav a {
     text-decoration: none;
     color: var(--primary);
     font-weight: 600;
     margin-left: 1.5rem;
-    transition: 0.3s;
+    transition: var(--transition);
 }
 
-.main-nav a:hover { color: var(--secondary); }
-
-/* HERO */
-.hero {
-    padding: 100px 0;
-    background: linear-gradient(135deg, #fdfbff 0%, #f5eeff 100%);
-    text-align: center;
+.main-nav a:hover { 
+    color: var(--secondary); 
 }
 
-.hero h1 {
-    font-size: 3rem;
-    color: var(--primary);
-    margin-bottom: 1rem;
+.btn-login {
+    text-decoration: none;
+    color: var(--primary) !important;
+    border: 2px solid var(--primary);
+    padding: 8px 22px;
+    border-radius: 50px;
+    font-weight: 700;
+    margin-left: 20px;
+    transition: var(--transition);
 }
 
-.hero p {
-    font-size: 1.2rem;
-    max-width: 700px;
+.btn-login:hover {
+    background-color: var(--primary);
+    color: white !important;
+}
+
+/* =========================================
+   3. ELEMENTE REUTILIZABILE (BUTOANE, SECȚIUNI)
+   ========================================= */
+.section { 
+    padding: 80px 0; 
+    text-align: center; 
+}
+
+.bg-light { 
+    background-color: var(--light); 
+}
+
+h2 { 
+    font-size: 2.2rem; 
+    color: var(--primary); 
+    margin-bottom: 0.5rem; 
+}
+
+.divider {
+    width: 60px;
+    height: 4px;
+    background: var(--secondary);
     margin: 0 auto 2rem;
+    border-radius: 2px;
 }
 
-.hero-btns {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-}
-
-/* BUTOANE */
 .btn {
+    display: inline-block;
     padding: 12px 28px;
     border-radius: 50px;
     text-decoration: none;
     font-weight: 600;
-    transition: 0.3s;
+    transition: var(--transition);
     background: linear-gradient(90deg, var(--secondary), var(--primary));
     color: var(--white);
     border: none;
+    cursor: pointer;
 }
 
 .btn-outline {
@@ -104,23 +141,53 @@ header {
     box-shadow: 0 5px 15px rgba(160, 92, 255, 0.3);
 }
 
-/* SECTIUNI */
-.section { padding: 80px 0; text-align: center; }
-.bg-light { background-color: var(--light); }
-
-h2 { font-size: 2.2rem; color: var(--primary); margin-bottom: 0.5rem; }
-
-.divider {
-    width: 60px;
-    height: 4px;
-    background: var(--secondary);
-    margin: 0 auto 2rem;
-    border-radius: 2px;
+/* =========================================
+   4. PAGINA START (HERO, ABOUT, CARDS)
+   ========================================= */
+.hero {
+    padding: 100px 0;
+    background: linear-gradient(135deg, #fdfbff 0%, #f5eeff 100%);
+    text-align: center;
 }
 
-.section-text { max-width: 800px; margin: auto; font-size: 1.1rem; }
+.small-title {
+    font-size: 2.2rem !important;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    color: var(--primary);
+}
 
-/* GRID SERVICII */
+.hero-description {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #555;
+    max-width: 800px;
+    margin: 0 auto 2.5rem;
+}
+
+.hero-btns {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.about-card {
+    background: white;
+    padding: 50px;
+    border-radius: 30px;
+    box-shadow: 0 10px 30px rgba(160, 92, 255, 0.05);
+    text-align: center;
+}
+
+.section-text { 
+    max-width: 800px; 
+    margin: auto; 
+    font-size: 1.1rem; 
+}
+
+.mt-1 { margin-top: 1.5rem; }
+
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -133,27 +200,21 @@ h2 { font-size: 2.2rem; color: var(--primary); margin-bottom: 0.5rem; }
     padding: 40px 30px;
     border-radius: 20px;
     box-shadow: var(--shadow);
-    transition: 0.3s;
+    transition: var(--transition);
 }
 
-.card:hover { transform: translateY(-10px); }
-.card h3 { color: var(--secondary); margin-bottom: 15px; }
-
-/* FOOTER */
-footer {
-    background: var(--primary);
-    color: var(--white);
-    padding: 30px 0;
-    text-align: center;
+.card:hover { 
+    transform: translateY(-10px); 
 }
 
-/* RESPONSIVE */
-@media (max-width: 768px) {
-    .hero h1 { font-size: 2.2rem; }
-    .main-nav { display: none; } /* Recomandat: Adaugă un meniu burger ulterior */
-    .hero-btns { flex-direction: column; align-items: center; }
+.card h3 { 
+    color: var(--secondary); 
+    margin-bottom: 15px; 
 }
-/* STILURI PENTRU FORMULAR */
+
+/* =========================================
+   5. PAGINA CONTACT (FORMULAR)
+   ========================================= */
 .form-wrapper {
     max-width: 600px;
     margin: 0 auto;
@@ -164,11 +225,16 @@ footer {
     text-align: left;
 }
 
-.contact-form {
-    margin-top: 30px;
+.subtitle-form {
+    color: var(--primary);
+    font-weight: 500;
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+    border-left: 4px solid var(--secondary);
+    padding-left: 15px;
 }
 
-.form-group {
+.contact-form .form-group {
     margin-bottom: 20px;
 }
 
@@ -188,41 +254,17 @@ footer {
     border-radius: 8px;
     font-family: inherit;
     font-size: 1rem;
-    transition: 0.3s;
+    transition: var(--transition);
 }
 
 .form-group input:focus, 
+.form-group select:focus, 
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary);
     background-color: #fff;
 }
 
-.btn-full {
-    width: 100%;
-    cursor: pointer;
-    border: none;
-    font-size: 1.1rem;
-    margin-top: 10px;
-}
-
-@media (max-width: 480px) {
-    .form-wrapper {
-        padding: 25px;
-    }
-}
-/* Stil pentru textul de sub titlu */
-.subtitle-form {
-    color: var(--primary);
-    font-weight: 500;
-    margin-bottom: 25px;
-    font-size: 1.1rem;
-    border-left: 4px solid var(--secondary);
-    padding-left: 15px;
-    text-align: left;
-}
-
-/* Stil pentru eticheta opțională */
 .optional {
     font-weight: normal;
     font-size: 0.85rem;
@@ -230,14 +272,42 @@ footer {
     font-style: italic;
 }
 
-/* Stil pentru select-uri ca să arate la fel ca input-urile */
-select {
-    cursor: pointer;
-    background-color: #fff;
+.btn-full {
+    width: 100%;
+    margin-top: 10px;
 }
 
-/* O mică ajustare pentru a centra titlul h2 în wrapper */
-.form-wrapper h2 {
-    text-align: left;
-    margin-bottom: 10px;
+/* =========================================
+   6. FOOTER
+   ========================================= */
+footer {
+    background: #222;
+    color: var(--white);
+    padding: 30px 0;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* =========================================
+   7. RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 768px) {
+    .logo { height: 60px; }
+    
+    .small-title { font-size: 1.8rem !important; }
+    
+    .main-nav { display: none; } /* Ideal de înlocuit cu un meniu burger */
+    
+    .hero-btns { 
+        flex-direction: column; 
+        align-items: center; 
+    }
+    
+    .about-card { padding: 30px 20px; }
+}
+
+@media (max-width: 480px) {
+    .form-wrapper {
+        padding: 25px;
+    }
 }
