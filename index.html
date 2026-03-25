@@ -6,6 +6,15 @@
   <title>L.D. Service Medical | Mentenanță și Reparații Profesionale</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+  <script>
+  const menuToggle = document.querySelector('.menu-toggle');
+  const mainNav = document.querySelector('.main-nav');
+
+  menuToggle.addEventListener('click', () => {
+    menuToggle.classList.toggle('active');
+    mainNav.classList.toggle('active');
+  });
+</script>
 <body>
 
  <header>
