@@ -19,12 +19,12 @@
                 <span class="bar"></span>
             </button>
             <nav class="main-nav">
-    <a href="index.html#servicii">Servicii</a>
-    <div class="nav-auth">
-        <a href="login.html" class="btn-login">Log In</a>
-        <a href="index.html" class="btn-nav-home">Acasă</a>
-    </div>
-</nav>
+                <a href="index.html#servicii">Servicii</a>
+                <div class="nav-auth">
+                    <a href="login.html" class="btn-login">Log In</a>
+                    <a href="index.html" class="btn-nav-home">Acasă</a>
+                </div>
+            </nav>
         </div>
     </header>
 
@@ -34,7 +34,7 @@
                 <h2 class="form-title">Solicită Intervenție Tehnică</h2>
                 <p class="subtitle-form">Un tehnician va prelua solicitarea ta în cel mai scurt timp posibil.</p>
                 
-                <form action="#" method="POST" class="contact-form">
+                <form id="contactForm" class="contact-form">
                     
                     <div class="form-group">
                         <label for="clinica">Nume Clinică / Cabinet</label>
@@ -74,7 +74,7 @@
                         <textarea id="mesaj" name="mesaj" rows="4" placeholder="Descrieți defectul sau specificați seria aparatului..."></textarea>
                     </div>
 
-                    <button type="submit" class="btn-full">Trimite Solicitarea</button>
+                    <button type="submit" id="submitBtn" class="btn-full">Trimite Solicitarea</button>
                 </form>
             </div>
         </div>
@@ -86,12 +86,63 @@
         </div>
     </footer>
 
-    <script>
+    <script type="module">
+        // Importă modulele Firebase de pe CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Configurația ta Firebase (Datele din screenshot-ul tău)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD...", // Completează aici cheia ta completă dacă lipsește ceva
+            authDomain: "proiect-de-diploma-larisa.firebaseapp.com",
+            projectId: "proiect-de-diploma-larisa",
+            storageBucket: "proiect-de-diploma-larisa.appspot.com",
+            messagingSenderId: "1080817521080",
+            appId: "1:1080817521080:web:329b2b604d2cd4056bbf4d"
+        };
+
+        // Inițializează Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Meniul Mobile (Codul tău original)
         const toggle = document.querySelector('.menu-toggle');
         const nav = document.querySelector('.main-nav');
         toggle.addEventListener('click', () => {
             toggle.classList.toggle('active');
             nav.classList.toggle('active');
+        });
+
+        // Trimitere Formular către Firestore
+        const contactForm = document.getElementById('contactForm');
+        
+        contactForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerText = "Se trimite...";
+            submitBtn.disabled = true;
+
+            try {
+                // Colectăm datele
+                const docRef = await addDoc(collection(db, "interventii"), {
+                    clinica: document.getElementById('clinica').value,
+                    sectie: document.getElementById('sectie').value,
+                    motiv: document.getElementById('motiv').value,
+                    echipament: document.getElementById('echipament').value,
+                    mesaj: document.getElementById('mesaj').value,
+                    data_creare: new Date().toISOString()
+                });
+
+                alert("Solicitarea a fost înregistrată! Un tehnician te va contacta.");
+                contactForm.reset();
+            } catch (error) {
+                console.error("Eroare la trimitere: ", error);
+                alert("A apărut o eroare. Te rugăm să încerci din nou.");
+            } finally {
+                submitBtn.innerText = "Trimite Solicitarea";
+                submitBtn.disabled = false;
+            }
         });
     </script>
 </body>
