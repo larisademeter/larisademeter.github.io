@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tichetele Mele | L.D. Service Medical</title>
+    <link rel="stylesheet" href="style.css"> </head>
+<body>
+
+    <header>
+        <div class="container header-content">
+            <a href="index.html" class="brand">
+                <img src="logo.png" alt="L.D. Service Medical" class="logo">
+            </a>
+            <button class="menu-toggle" aria-label="Meniu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+            <nav class="main-nav">
+                <a href="index.html">Acasă</a>
+                <span id="userEmail" style="margin: 0 15px; font-weight: bold; color: #00766c; font-size: 0.9em;">Se încarcă...</span>
+                <button id="btnDeconectare" class="btn-nav-contact" style="background-color: #d9534f; border: none; cursor: pointer; padding: 8px 15px; border-radius: 4px; color: white;">Deconectare</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="section">
+        <div class="container" style="max-width: 800px; margin-top: 40px; min-height: 60vh;">
+            <h2 style="color: #333; margin-bottom: 10px;">Intervențiile și Tichetele Mele</h2>
+            <p style="color: #666; margin-bottom: 20px;">Mai jos sunt afișate solicitările de service asociate contului tău.</p>
+            
+            <div id="ticheteContainer">
+                <p style="color: #888;">Se încarcă tichetele tale...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 L.D. Service Medical. Partenerul tău în tehnologie medicală.</p>
+        </div>
+    </footer>
+
+    <script>
+        const toggle = document.querySelector('.menu-toggle');
+        const nav = document.querySelector('.main-nav');
+        toggle.addEventListener('click', () => {
+            toggle.classList.toggle('active');
+            nav.classList.toggle('active');
+        });
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // TODO: Înlocuiește aceste chei cu exact aceleași chei pe care le-ai pus în login.html!
+        const firebaseConfig = {
+            apiKey: "AICI_COPIEZI_API_KEY_UL_TAU",
+            authDomain: "proiect-de-diploma-larisa.firebaseapp.com",
+            projectId: "proiect-de-diploma-larisa",
+            storageBucket: "proiect-de-diploma-larisa.appspot.com",
+            messagingSenderId: "AICI_COPIEZI_MESSAGING_SENDER_ID",
+            appId: "AICI_COPIEZI_APP_ID"
+        };
+
+        // Inițializăm serviciile
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Pasul A: Verificăm dacă utilizatorul este logat în siguranță
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Dacă este logat, îi scriem emailul în meniu și îi încărcăm tichetele
+                document.getElementById('userEmail').innerText = user.email;
+                incarcaTichetele(user.uid);
+            } else {
+                // Dacă NU este logat, îl redirecționăm forțat la pagina de login
+                window.location.href = "login.html";
+            }
+        });
+
+        // Pasul B: Preluăm din Firestore doar tichetele care au userId-ul egal cu cel al utilizatorului conectat
+        async function incarcaTichetele(userId) {
+            try {
+                const container = document.getElementById('ticheteContainer');
+                const ticheteRef = collection(db, "interventii");
+                
+                // Interogarea: filtrează colecția unde câmpul "userId" este exact ID-ul utilizatorului conectat
+                const q = query(ticheteRef, where("userId", "==", userId));
+                const querySnapshot = await getDocs(q);
+
+                container.innerHTML = ""; // Ștergem textul de încărcare
+
+                if (querySnapshot.empty) {
+                    container.innerHTML = `
+                        <div style="background: #f9f9f9; padding: 30px; border-radius: 8px; text-align: center; border: 1px dashed #ccc; color: #666;">
+                            Nu ai nicio intervenție înregistrată pe acest cont.
+                        </div>`;
+                    return;
+                }
+
+                // Luăm fiecare tichet găsit și îl afișăm frumos în pagină
+                querySnapshot.forEach((doc) => {
+                    const dateTichet = doc.data();
+                    
+                    const card = document.createElement('div');
+                    // Îi aplicăm un stil curat care să se potrivească cu designul tău medical (nuanțe de verde/teal)
+                    card.style.cssText = "background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #00766c; border-top: 1px solid #f0f0f0; border-right: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0;";
+                    
+                    card.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <h3 style="margin: 0; color: #333; font-size: 1.25em;">Echipament: ${dateTichet.echipament || 'Nespecificat'}</h3>
+                            <span style="background: #e6f4ea; color: #137333; padding: 4px 10px; border-radius: 50px; font-size: 0.85em; font-weight: bold;">
+                                Status: ${dateTichet.status || 'În așteptare'}
+                            </span>
+                        </div>
+                        <p style="margin: 10px 0; color: #555; line-height: 1.5;"><strong>Descriere problemă:</strong> ${dateTichet.descriere || 'Fără descriere disponibilă.'}</p>
+                        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #fafafa; display: flex; justify-content: space-between; font-size: 0.8em; color: #999;">
+                            <span>ID Solicitare: ${doc.id}</span>
+                            <span>Spital/Clinică: ${dateTichet.spital || 'Nespecificat'}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error("Eroare la preluarea datelor:", error);
+                document.getElementById('ticheteContainer').innerHTML = "<p style='color: #d9534f;'>Eroare la încărcarea solicitărilor tale. Contactează administratorul.</p>";
+            }
+        }
+
+        // Pasul C: Butonul de Deconectare (Log Out)
+        document.getElementById('btnDeconectare').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = "login.html";
+            }).catch((error) => {
+                console.error("Eroare la delogare:", error);
+            });
+        });
+    </script>
+</body>
+</html>
