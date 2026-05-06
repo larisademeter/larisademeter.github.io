@@ -32,9 +32,14 @@
         <div class="container">
             <div class="form-wrapper">
                 <h2 class="form-title">Solicită Intervenție Tehnică</h2>
-                <p class="subtitle-form">Un tehnician va prelua solicitarea ta în cel mai scurt timp posibil.</p>
                 
-                <form id="contactForm" class="contact-form">
+                <p id="authCheckMessage" style="text-align: center; font-weight: bold; color: #00766c;">
+                    Se verifică conexiunea securizată...
+                </p>
+                
+                <form id="contactForm" class="contact-form" style="display: none;">
+                    <p class="subtitle-form">Un tehnician va prelua solicitarea ta în cel mai scurt timp posibil.</p>
+                    
                     <div class="form-group">
                         <label for="clinica">Nume Clinică / Cabinet</label>
                         <input type="text" id="clinica" name="clinica" placeholder="Ex: Spitalul Municipal..." required>
@@ -87,6 +92,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        // 1. Am adăugat serviciul de autentificare (getAuth și onAuthStateChanged)
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -100,6 +107,7 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
         // Meniul Mobile
@@ -112,10 +120,27 @@
             });
         }
 
-        // Trimitere Formular
         const contactForm = document.getElementById('contactForm');
+        const authCheckMessage = document.getElementById('authCheckMessage');
         const submitBtn = document.getElementById('submitBtn');
+        
+        let logatUserId = null; // Vom stoca UID-ul utilizatorului logat aici
 
+        // 2. VERIFICARE AUTOMATĂ ACCES PORTAL
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Utilizatorul este logat!
+                logatUserId = user.uid; // Salvăm codul lui unic
+                authCheckMessage.style.display = "none"; // Ascundem textul de încărcare
+                contactForm.style.display = "block"; // Afișăm formularul
+            } else {
+                // Dacă nu este autentificat, îl anunțăm politicos și îl trimitem la login.html
+                alert("Pentru a trimite o solicitare de intervenție și a urmări stadiul ei, te rugăm să te conectezi mai întâi în cont.");
+                window.location.replace("login.html");
+            }
+        });
+
+        // Trimitere Formular cu adăugarea ID-ului utilizatorului
         if(contactForm) {
             contactForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -124,6 +149,7 @@
                 submitBtn.disabled = true;
 
                 try {
+                    // 3. Salvăm în Firestore adăugând câmpul userId extras din contul curent
                     await addDoc(collection(db, "interventii"), {
                         clinica: document.getElementById('clinica').value,
                         sectie: document.getElementById('sectie').value,
@@ -131,23 +157,21 @@
                         echipament: document.getElementById('echipament').value,
                         mesaj: document.getElementById('mesaj').value,
                         data_solicitare: new Date().toLocaleString('ro-RO'),
-                        status: "Nouă"
+                        status: "Nouă",
+                        userId: logatUserId // Legătura de aur! Acest câmp leagă tichetul de utilizatorul curent
                     });
 
-                    // 1. Notificăm utilizatorul
                     alert("Succes! Solicitarea ta a fost trimisă.");
-                    
-                    // 2. Resetăm formularul
                     contactForm.reset();
 
-                    // 3. Redirecționăm forțat după un mic delay (500ms)
+                    // 4. Redirecționăm utilizatorul direct la pagina LUI de tichete ca să își vadă tichetul proaspăt creat
                     setTimeout(() => {
-                        window.location.replace("index.html");
+                        window.location.replace("tichete.html");
                     }, 500);
 
                 } catch (error) {
                     console.error("Eroare:", error);
-                    alert("Eroare la trimitere. Verifică setările Firestore Rules.");
+                    alert("Eroare la trimitere. Contactați administratorul.");
                     submitBtn.innerText = "Trimite Solicitarea";
                     submitBtn.disabled = false;
                 }
