@@ -20,15 +20,17 @@
             </button>
             <nav class="main-nav">
                 <a href="index.html#servicii">Servicii</a>
-                
-                <a href="tichete.html" id="navTicheteBtn" style="display: none;">Tichetele Mele</a>
+                <a href="tichete.html" id="navTicheteBtn" class="nav-hidden">Tichetele Mele</a>
                 
                 <div class="nav-auth">
-                    <a href="login.html" id="navLogInBtn" class="btn-login">Log In</a>
-                    
-                    <button id="navDeconectareBtn" class="btn-nav-home" style="display: none;">Deconectare</button>
-                    
+                    <a href="login.html" id="navLogInBtn" class="btn-login nav-hidden">Log In</a>
+                    <button id="navDeconectareBtn" class="btn-nav-home nav-hidden">Deconectare</button>
                     <a href="index.html" class="btn-nav-contact">Acasă</a>
+                    
+                    <a href="notificari.html" id="navBellBtn" class="notification-bell-container nav-hidden">
+                        <span class="notification-bell">🔔</span>
+                        <span id="bellBadge" class="notification-badge nav-hidden">0</span>
+                    </a>
                 </div>
             </nav>
         </div>
@@ -99,7 +101,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJkNtiqJv5MXUe1XNPJf4lBI3KSl9ns0w",
@@ -115,7 +117,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Meniul Mobile
         const toggle = document.querySelector('.menu-toggle');
         const nav = document.querySelector('.main-nav');
         if(toggle && nav) {
@@ -132,37 +133,58 @@
         const navLogInBtn = document.getElementById('navLogInBtn');
         const navTicheteBtn = document.getElementById('navTicheteBtn');
         const navDeconectareBtn = document.getElementById('navDeconectareBtn');
+        const navBellBtn = document.getElementById('navBellBtn');
         
         let logatUserId = null;
+        let ascultatorBadge = null;
 
-        // VERIFICARE AUTOMATĂ ACCES PORTAL & NAVIGARE DINAMICĂ
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Sincronizare Header
-                if (navLogInBtn) navLogInBtn.style.display = "none";
-                if (navTicheteBtn) navTicheteBtn.style.display = "inline-block";
-                if (navDeconectareBtn) navDeconectareBtn.style.display = "inline-block";
+                if (navLogInBtn) navLogInBtn.classList.add('nav-hidden');
+                if (navTicheteBtn) navTicheteBtn.classList.remove('nav-hidden');
+                if (navDeconectareBtn) navDeconectareBtn.classList.remove('nav-hidden');
+                if (navBellBtn) navBellBtn.classList.remove('nav-hidden');
 
-                // Autorizare formular
                 logatUserId = user.uid;
                 authCheckMessage.style.display = "none";
                 contactForm.style.display = "block";
+
+                // Monitorizare badge notificări în timp real pe pagina de Contact
+                const notificariRef = collection(db, "notificari");
+                const q = query(notificariRef, where("destinatarId", "==", user.uid), where("citita", "==", false));
+                
+                ascultatorBadge = onSnapshot(q, (querySnapshot) => {
+                    const badge = document.getElementById('bellBadge');
+                    const necititeCount = querySnapshot.size;
+                    
+                    if (badge) {
+                        if (necititeCount > 0) {
+                            badge.innerText = necititeCount;
+                            badge.classList.remove('nav-hidden');
+                        } else {
+                            badge.classList.add('nav-hidden');
+                        }
+                    }
+                });
             } else {
-                // Deconectat - Header Standard
-                if (navLogInBtn) navLogInBtn.style.display = "inline-block";
-                if (navTicheteBtn) navTicheteBtn.style.display = "none";
-                if (navDeconectareBtn) navDeconectareBtn.style.display = "none";
+                if (navLogInBtn) navLogInBtn.classList.remove('nav-hidden');
+                if (navTicheteBtn) navTicheteBtn.classList.add('nav-hidden');
+                if (navDeconectareBtn) navDeconectareBtn.classList.add('nav-hidden');
+                if (navBellBtn) navBellBtn.classList.add('nav-hidden');
+
+                if (ascultatorBadge) {
+                    ascultatorBadge();
+                    ascultatorBadge = null;
+                }
 
                 alert("Pentru a trimite o solicitare de intervenție și a urmări stadiul ei, te rugăm să te conectezi mai întâi în cont.");
                 window.location.replace("login.html");
             }
         });
 
-        // Evenimentul pentru butonul de Deconectare din Header
         if (navDeconectareBtn) {
             navDeconectareBtn.addEventListener('click', () => {
                 signOut(auth).then(() => {
-                    console.log("Utilizatorul s-a deconectat.");
                     window.location.replace("index.html");
                 }).catch((error) => {
                     console.error("Eroare la deconectare:", error);
@@ -170,7 +192,6 @@
             });
         }
 
-        // Trimitere Formular în Firestore
         if(contactForm) {
             contactForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
