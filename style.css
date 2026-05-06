@@ -363,7 +363,7 @@ footer {
    7. CLASE DE UTILITATE (FIREBASE DYNAMICS)
    ========================================= */
 .nav-hidden {
-    display: none !important;
+    display: none !important; /* Ascundere absolută cu prioritate maximă */
 }
 
 #navTicheteBtn {
@@ -421,6 +421,11 @@ footer {
     
     .login-split { grid-template-columns: 1fr; }
     .login-visual { padding: 40px; }
+
+    /* Asigură funcționarea corectă a ascunderii pe ecranele mici */
+    .main-nav .nav-hidden {
+        display: none !important;
+    }
 }
 
 /* ANIMAȚIE HAMBURGER */
