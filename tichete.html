@@ -5,6 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tichetele Mele | L.D. Service Medical</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Suprascriere stiluri specifice pentru integrarea cromaticii brandului (Turcoaz, Mov, Roz) */
+        body {
+            background-color: #f7f5f9; /* Un fundal foarte deschis cu tentă caldă de mov/gri */
+        }
+        
+        .brand-title {
+            color: #333;
+            font-weight: 800;
+        }
+
+        /* Cardurile de tichete restilizate */
+        .ticket-card {
+            background: #ffffff;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(142, 68, 173, 0.05); /* Umbră discretă violet */
+            border-left: 6px solid #00c2b2; /* Margine accent Turcoaz */
+            border-top: 1px solid #f1ebf7;
+            border-right: 1px solid #f1ebf7;
+            border-bottom: 1px solid #f1ebf7;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .ticket-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(142, 68, 173, 0.1);
+        }
+
+        /* Detaliile secundare (secție, clinică, motiv etc.) sub formă de tag-uri elegante */
+        .info-badge {
+            display: inline-flex;
+            align-items: center;
+            background: #f2eff6; /* Mov extrem de deschis */
+            color: #7b2cbf; /* Text Mov */
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-bottom: 8px;
+        }
+
+        .info-badge-turcoaz {
+            display: inline-flex;
+            align-items: center;
+            background: #e6faf8; /* Turcoaz deschis */
+            color: #008f83; /* Text Turcoaz închis */
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-bottom: 8px;
+        }
+
+        /* Stil pentru meniurile derulante de schimbare status (Tehnicieni/Admin) */
+        .status-select {
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 2px solid #e1d5f2;
+            font-weight: 700;
+            background: #ffffff;
+            color: #6a1b9a; /* Text Violet */
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .status-select:focus {
+            border-color: #00c2b2; /* Se colorează în Turcoaz la selectare */
+        }
+
+        /* Butonul de deconectare adaptat cromatic (gradient Roz/Mov) */
+        .btn-logout {
+            background: linear-gradient(135deg, #ff4081, #9c27b0); /* Roz -> Mov */
+            border: none;
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn-logout:hover {
+            opacity: 0.9;
+        }
+    </style>
 </head>
 <body>
 
@@ -19,20 +109,20 @@
                 <span class="bar"></span>
             </button>
             <nav class="main-nav">
-                <a href="index.html">Acasă</a>
-                <span id="userEmail" style="margin: 0 15px; font-weight: bold; color: #00766c; font-size: 0.9em;">Se încarcă...</span>
-                <button id="btnDeconectare" class="btn-nav-contact" style="background-color: #d9534f; border: none; cursor: pointer; padding: 8px 15px; border-radius: 4px; color: white;">Deconectare</button>
+                <a href="index.html" style="color: #00c2b2; font-weight: bold; text-transform: uppercase; font-size: 0.9em; letter-spacing: 1px;">Acasă</a>
+                <span id="userEmail" style="margin: 0 15px; font-weight: bold; color: #7b2cbf; font-size: 0.95em;">Se încarcă...</span>
+                <button id="btnDeconectare" class="btn-logout">Deconectare</button>
             </nav>
         </div>
     </header>
 
     <main class="section">
         <div class="container" style="max-width: 800px; margin-top: 40px; min-height: 60vh;">
-            <h2 style="color: #333; margin-bottom: 10px;">Intervențiile și Tichetele Mele</h2>
-            <p style="color: #666; margin-bottom: 20px;">Mai jos sunt afișate solicitările de service asociate contului tău.</p>
+            <h2 style="color: #4a154b; margin-bottom: 8px; font-weight: 800;">Intervențiile și Tichetele Mele</h2>
+            <p style="color: #666; margin-bottom: 30px; font-size: 1.05em;">Monitorizează în timp real stadiul solicitărilor tale de service.</p>
             
             <div id="ticheteContainer">
-                <p style="color: #888;">Se încarcă tichetele tale...</p>
+                <p style="color: #888; text-align: center;">Se încarcă tichetele tale...</p>
             </div>
         </div>
     </main>
@@ -74,7 +164,7 @@
 
         let esteTehnicianSauAdmin = false;
 
-        // Verificăm dacă utilizatorul este conectat
+        // Verificăm conectarea utilizatorului
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('userEmail').innerText = user.email;
@@ -84,13 +174,12 @@
             }
         });
 
-        // Determinăm rolul
+        // Verificăm rolurile și stabilim ce tichete aducem
         async function determinaRolSiIncarca(user) {
             const email = user.email.toLowerCase();
             const ticheteRef = collection(db, "interventii");
             let q;
 
-            // Verificăm dacă utilizatorul curent are drepturi de modificare (tehnician sau admin)
             if (email === "tehnician1@licenta.ro" || email === "tehnician2@licenta.ro" || email === "admin@licenta.ro") {
                 esteTehnicianSauAdmin = true;
             } else {
@@ -110,7 +199,7 @@
             afiseazaTichete(q);
         }
 
-        // Afișăm tichetele și adăugăm opțiunea de schimbare a statusului pentru tehnicieni/admin
+        // Construim cardurile elegante în pagină
         async function afiseazaTichete(interogare) {
             try {
                 const container = document.getElementById('ticheteContainer');
@@ -120,7 +209,8 @@
 
                 if (querySnapshot.empty) {
                     container.innerHTML = `
-                        <div style="background: #f9f9f9; padding: 30px; border-radius: 8px; text-align: center; border: 1px dashed #ccc; color: #666;">
+                        <div style="background: #fdfbfe; padding: 40px; border-radius: 16px; text-align: center; border: 2px dashed #e1d5f2; color: #7b2cbf;">
+                            <span style="font-size: 2.5em; display:block; margin-bottom:10px;">📋</span>
                             Nu există nicio intervenție înregistrată în această secțiune.
                         </div>`;
                     return;
@@ -129,28 +219,29 @@
                 querySnapshot.forEach((docSnap) => {
                     const dateTichet = docSnap.data();
                     const card = document.createElement('div');
-                    card.style.cssText = "background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #00766c; border-top: 1px solid #f0f0f0; border-right: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0;";
+                    card.className = "ticket-card";
                     
                     const statusActual = dateTichet.status || 'În așteptare';
                     
-                    // Stabilim culoarea badge-ului de status în funcție de stadiu
-                    let statusColor = "#137333"; // verde pentru rezolvată / nouă
-                    let statusBg = "#e6f4ea";
+                    // Schimbăm culorile badge-ului de status dinamic
+                    let statusColor = "#008f83"; // Turcoaz închis
+                    let statusBg = "#e6faf8";    // Turcoaz deschis
+                    
                     if (statusActual === "În curs de rezolvare") {
-                        statusColor = "#b06000"; // portocaliu
-                        statusBg = "#fef7e0";
+                        statusColor = "#9c27b0"; // Violet/Mov
+                        statusBg = "#f3e5f5";    // Violet deschis
                     } else if (statusActual === "Nouă") {
-                        statusColor = "#1a73e8"; // albastru
-                        statusBg = "#e8f0fe";
+                        statusColor = "#ff4081"; // Roz vibrant
+                        statusBg = "#fce4ec";    // Roz deschis
                     }
 
-                    // Construim elementul vizual de status: text simplu pentru clienți SAU meniu derulant (select) pentru tehnicieni/admin
+                    // Generăm HTML-ul pentru controlul de status
                     let statusElementHTML = "";
                     if (esteTehnicianSauAdmin) {
                         statusElementHTML = `
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <label style="font-size: 0.85em; font-weight: bold; color: #666;">Schimbă Status:</label>
-                                <select class="status-select" data-id="${docSnap.id}" style="padding: 5px 10px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; background: #fff; cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 0.85em; font-weight: bold; color: #7b2cbf;">Status:</span>
+                                <select class="status-select" data-id="${docSnap.id}">
                                     <option value="Nouă" ${statusActual === "Nouă" ? "selected" : ""}>Nouă</option>
                                     <option value="În curs de rezolvare" ${statusActual === "În curs de rezolvare" ? "selected" : ""}>În curs de rezolvare</option>
                                     <option value="Rezolvată" ${statusActual === "Rezolvată" ? "selected" : ""}>Rezolvată</option>
@@ -159,27 +250,44 @@
                         `;
                     } else {
                         statusElementHTML = `
-                            <span style="background: ${statusBg}; color: ${statusColor}; padding: 4px 10px; border-radius: 50px; font-size: 0.85em; font-weight: bold;">
-                                Status: ${statusActual}
+                            <span style="background: ${statusBg}; color: ${statusColor}; padding: 6px 14px; border-radius: 50px; font-size: 0.85em; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                                ${statusActual}
                             </span>
                         `;
                     }
 
+                    // Preluăm opționalele sau le punem valori standard
+                    const sectia = dateTichet.sectie ? dateTichet.sectie : "Nespecificată";
+                    const motivul = dateTichet.motiv === "service" ? "Reparație (Defect)" : "Mentenanță periodică";
+                    const dataSolicitare = dateTichet.data_solicitare ? dateTichet.data_solicitare : "Fără dată";
+
+                    // Construim structura cu TOATE detaliile din baza de date
                     card.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                            <h3 style="margin: 0; color: #333; font-size: 1.25em;">Echipament: ${dateTichet.echipament || 'Nespecificat'}</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+                            <h3 style="margin: 0; color: #4a154b; font-size: 1.35em; font-weight: 800;">🩺 ${dateTichet.echipament || 'Echipament Nespecificat'}</h3>
                             ${statusElementHTML}
                         </div>
-                        <p style="margin: 10px 0; color: #555; line-height: 1.5;"><strong>Descriere problemă:</strong> ${dateTichet.mesaj || 'Fără descriere.'}</p>
-                        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #fafafa; display: flex; justify-content: space-between; font-size: 0.8em; color: #999;">
-                            <span>ID Solicitare: ${docSnap.id}</span>
-                            <span>Spital/Clinică: ${dateTichet.clinica || 'Nespecificat'}</span>
+
+                        <div style="margin-bottom: 15px;">
+                            <span class="info-badge-turcoaz">🏢 ${dateTichet.clinica || 'Nespecificată'}</span>
+                            <span class="info-badge">📍 Secție: ${sectia}</span>
+                            <span class="info-badge">🔧 Tip: ${motivul}</span>
+                        </div>
+
+                        <div style="background: #faf8fc; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 3px solid #ff4081;">
+                            <strong style="color: #4a154b; font-size: 0.9em; display: block; margin-bottom: 5px;">Descriere detaliată problemă:</strong>
+                            <p style="margin: 0; color: #444; line-height: 1.6; font-size: 0.95em;">${dateTichet.mesaj || 'Fără detalii suplimentare înregistrate.'}</p>
+                        </div>
+
+                        <div style="padding-top: 12px; border-top: 1px dashed #e1d5f2; display: flex; justify-content: space-between; font-size: 0.8em; color: #8c7b99; font-weight: 600;">
+                            <span>🆔 ID Solicitare: ${docSnap.id}</span>
+                            <span>📅 Data: ${dataSolicitare}</span>
                         </div>
                     `;
                     container.appendChild(card);
                 });
 
-                // Adăugăm eveniment de schimbare în baza de date pentru toate meniurile derulante randate
+                // Ascultător pentru când tehnicianul/adminul schimbă statusul direct pe card
                 document.querySelectorAll('.status-select').forEach(select => {
                     select.addEventListener('change', async (e) => {
                         const docId = e.target.getAttribute('data-id');
@@ -187,29 +295,25 @@
                         
                         try {
                             const docRef = doc(db, "interventii", docId);
-                            // Actualizăm câmpul 'status' în Firestore
                             await updateDoc(docRef, {
                                 status: noulStatus
                             });
-                            console.log(`Statusul tichetului ${docId} a fost actualizat la: ${noulStatus}`);
-                            alert(`Status schimbat cu succes în: "${noulStatus}"`);
-                            
-                            // Reîncărcăm pagina discret pentru a aplica noile culori/stiluri
+                            alert(`Status actualizat cu succes în: "${noulStatus}"`);
                             location.reload();
                         } catch (error) {
-                            console.error("Eroare la actualizarea statusului:", error);
-                            alert("Nu aveți permisiunea de a modifica acest status.");
+                            console.error("Eroare update status:", error);
+                            alert("Eroare la modificarea statusului.");
                         }
                     });
                 });
 
             } catch (error) {
                 console.error("Eroare preluare date:", error);
-                document.getElementById('ticheteContainer').innerHTML = "<p style='color: #d9534f;'>Eroare la încărcarea solicitărilor.</p>";
+                document.getElementById('ticheteContainer').innerHTML = "<p style='color: #d9534f; text-align: center;'>Eroare la încărcarea datelor.</p>";
             }
         }
 
-        // Deconectare (Log Out)
+        // Delogare
         document.getElementById('btnDeconectare').addEventListener('click', () => {
             signOut(auth).then(() => {
                 window.location.href = "login.html";
