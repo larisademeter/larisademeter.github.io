@@ -78,22 +78,6 @@
         .status-select:focus {
             border-color: #00c2b2; /* Se colorează în Turcoaz la selectare */
         }
-
-        /* Butonul de deconectare adaptat cromatic (gradient Roz/Mov) */
-        .btn-logout {
-            background: linear-gradient(135deg, #ff4081, #9c27b0); /* Roz -> Mov */
-            border: none;
-            cursor: pointer;
-            padding: 10px 20px;
-            border-radius: 25px;
-            color: white;
-            font-weight: bold;
-            transition: opacity 0.2s;
-        }
-
-        .btn-logout:hover {
-            opacity: 0.9;
-        }
     </style>
 </head>
 <body>
@@ -109,9 +93,15 @@
                 <span class="bar"></span>
             </button>
             <nav class="main-nav">
-                <a href="index.html" style="color: #00c2b2; font-weight: bold; text-transform: uppercase; font-size: 0.9em; letter-spacing: 1px;">Acasă</a>
+                <a href="index.html">Acasă</a>
+                <a href="tichete.html" id="navTicheteBtn" style="font-weight: bold; color: #9c27b0;">Tichetele Mele</a>
+                
                 <span id="userEmail" style="margin: 0 15px; font-weight: bold; color: #7b2cbf; font-size: 0.95em;">Se încarcă...</span>
-                <button id="btnDeconectare" class="btn-logout">Deconectare</button>
+                
+                <div class="nav-auth">
+                    <button id="btnDeconectare" class="btn-nav-home">Deconectare</button>
+                    <a href="contact.html" class="btn-nav-contact">Contact</a>
+                </div>
             </nav>
         </div>
     </header>
@@ -313,10 +303,10 @@
             }
         }
 
-        // Delogare
+        // Delogare cu redirecționare directă spre index.html
         document.getElementById('btnDeconectare').addEventListener('click', () => {
             signOut(auth).then(() => {
-                window.location.href = "login.html";
+                window.location.replace("index.html");
             }).catch((error) => {
                 console.error("Eroare delogare:", error);
             });
