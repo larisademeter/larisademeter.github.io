@@ -108,19 +108,19 @@
                     const card = document.createElement('div');
                     card.style.cssText = "background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #00766c; border-top: 1px solid #f0f0f0; border-right: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0;";
                     
-                    card.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                            <h3 style="margin: 0; color: #333; font-size: 1.25em;">Echipament: ${dateTichet.echipament || 'Nespecificat'}</h3>
-                            <span style="background: #e6f4ea; color: #137333; padding: 4px 10px; border-radius: 50px; font-size: 0.85em; font-weight: bold;">
-                                Status: ${dateTichet.status || 'În așteptare'}
-                            </span>
-                        </div>
-                        <p style="margin: 10px 0; color: #555; line-height: 1.5;"><strong>Descriere problemă:</strong> ${dateTichet.descriere || 'Fără descriere.'}</p>
-                        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #fafafa; display: flex; justify-content: space-between; font-size: 0.8em; color: #999;">
-                            <span>ID Solicitare: ${doc.id}</span>
-                            <span>Spital/Clinică: ${dateTichet.spital || 'Nespecificat'}</span>
-                        </div>
-                    `;
+                   card.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+        <h3 style="margin: 0; color: #333; font-size: 1.25em;">Echipament: ${dateTichet.echipament || 'Nespecificat'}</h3>
+        <span style="background: #e6f4ea; color: #137333; padding: 4px 10px; border-radius: 50px; font-size: 0.85em; font-weight: bold;">
+            Status: ${dateTichet.status || 'În așteptare'}
+        </span>
+    </div>
+    <p style="margin: 10px 0; color: #555; line-height: 1.5;"><strong>Descriere problemă:</strong> ${dateTichet.mesaj || 'Fără descriere.'}</p>
+    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #fafafa; display: flex; justify-content: space-between; font-size: 0.8em; color: #999;">
+        <span>ID Solicitare: ${doc.id}</span>
+        <span>Spital/Clinică: ${dateTichet.clinica || 'Nespecificat'}</span>
+    </div>
+`;
                     container.appendChild(card);
                 });
 
