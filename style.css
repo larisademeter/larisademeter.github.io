@@ -427,7 +427,47 @@ footer {
         display: none !important;
     }
 }
+/* =========================================
+   9. SISTEM DE NOTIFICĂRI (TOAST NOTIFICATIONS)
+   ========================================= */
+.toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: white;
+    color: var(--dark-text);
+    padding: 15px 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.15);
+    border-left: 5px solid var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 2000;
+    font-weight: 600;
+    font-size: 0.95rem;
+    animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.3s, transform 0.3s;
+}
 
+.toast-notification.success {
+    border-left-color: var(--turquoise);
+}
+
+.toast-notification.alert {
+    border-left-color: var(--secondary);
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
 /* ANIMAȚIE HAMBURGER */
 .menu-toggle.active span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
 .menu-toggle.active span:nth-child(2) { opacity: 0; }
