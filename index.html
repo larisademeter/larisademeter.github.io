@@ -22,11 +22,13 @@
 
             <nav class="main-nav">
                 <a href="#servicii">Servicii</a>
+                
+                <a href="tichete.html" id="navTicheteBtn" style="display: none;">Tichetele Mele</a>
+                
                 <div class="nav-auth">
                     <a href="login.html" id="navLogInBtn" class="btn-login">Log In</a>
                     
-                    <a href="tichete.html" id="navTicheteBtn" style="display: none; margin-right: 15px; font-weight: bold; color: #9c27b0; text-decoration: none; align-self: center;">Tichetele Mele</a>
-                    <button id="navDeconectareBtn" style="display: none; background: linear-gradient(135deg, #ff4081, #9c27b0); border: none; cursor: pointer; padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; transition: opacity 0.2s;">Deconectare</button>
+                    <button id="navDeconectareBtn" class="btn-nav-home" style="display: none;">Deconectare</button>
                     
                     <a href="contact.html" class="btn-nav-contact">Contact</a>
                 </div>
@@ -131,14 +133,14 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 // UTILIZATOR LOGAT:
-                if (navLogInBtn) navLogInBtn.style.display = "none";         // Ascundem Log In
-                if (navTicheteBtn) navTicheteBtn.style.display = "inline-block"; // Arătăm Tichetele Mele
-                if (navDeconectareBtn) navDeconectareBtn.style.display = "inline-block"; // Arătăm butonul Deconectare
+                if (navLogInBtn) navLogInBtn.style.display = "none";
+                if (navTicheteBtn) navTicheteBtn.style.display = "inline-block";
+                if (navDeconectareBtn) navDeconectareBtn.style.display = "inline-block";
             } else {
                 // UTILIZATOR DECONECTAT:
-                if (navLogInBtn) navLogInBtn.style.display = "inline-block"; // Arătăm Log In
-                if (navTicheteBtn) navTicheteBtn.style.display = "none";         // Ascundem Tichetele Mele
-                if (navDeconectareBtn) navDeconectareBtn.style.display = "none";         // Ascundem Deconectare
+                if (navLogInBtn) navLogInBtn.style.display = "inline-block";
+                if (navTicheteBtn) navTicheteBtn.style.display = "none";
+                if (navDeconectareBtn) navDeconectareBtn.style.display = "none";
             }
         });
 
@@ -147,7 +149,6 @@
             navDeconectareBtn.addEventListener('click', () => {
                 signOut(auth).then(() => {
                     console.log("Utilizatorul s-a deconectat.");
-                    // Îl redirecționăm forțat spre pagina de start pentru a reîmprospăta bara
                     window.location.replace("index.html");
                 }).catch((error) => {
                     console.error("Eroare la deconectare:", error);
