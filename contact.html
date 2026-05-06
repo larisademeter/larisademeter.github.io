@@ -20,9 +20,15 @@
             </button>
             <nav class="main-nav">
                 <a href="index.html#servicii">Servicii</a>
+                
+                <a href="tichete.html" id="navTicheteBtn" style="display: none;">Tichetele Mele</a>
+                
                 <div class="nav-auth">
-                    <a href="login.html" class="btn-login">Log In</a>
-                    <a href="index.html" class="btn-nav-home">Acasă</a>
+                    <a href="login.html" id="navLogInBtn" class="btn-login">Log In</a>
+                    
+                    <button id="navDeconectareBtn" class="btn-nav-home" style="display: none;">Deconectare</button>
+                    
+                    <a href="index.html" class="btn-nav-contact">Acasă</a>
                 </div>
             </nav>
         </div>
@@ -33,7 +39,7 @@
             <div class="form-wrapper">
                 <h2 class="form-title">Solicită Intervenție Tehnică</h2>
                 
-                <p id="authCheckMessage" style="text-align: center; font-weight: bold; color: #00766c;">
+                <p id="authCheckMessage" style="text-align: center; font-weight: bold; color: #8b5cf6;">
                     Se verifică conexiunea securizată...
                 </p>
                 
@@ -92,8 +98,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // 1. Am adăugat serviciul de autentificare (getAuth și onAuthStateChanged)
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -124,23 +129,48 @@
         const authCheckMessage = document.getElementById('authCheckMessage');
         const submitBtn = document.getElementById('submitBtn');
         
-        let logatUserId = null; // Vom stoca UID-ul utilizatorului logat aici
+        const navLogInBtn = document.getElementById('navLogInBtn');
+        const navTicheteBtn = document.getElementById('navTicheteBtn');
+        const navDeconectareBtn = document.getElementById('navDeconectareBtn');
+        
+        let logatUserId = null;
 
-        // 2. VERIFICARE AUTOMATĂ ACCES PORTAL
+        // VERIFICARE AUTOMATĂ ACCES PORTAL & NAVIGARE DINAMICĂ
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Utilizatorul este logat!
-                logatUserId = user.uid; // Salvăm codul lui unic
-                authCheckMessage.style.display = "none"; // Ascundem textul de încărcare
-                contactForm.style.display = "block"; // Afișăm formularul
+                // Sincronizare Header
+                if (navLogInBtn) navLogInBtn.style.display = "none";
+                if (navTicheteBtn) navTicheteBtn.style.display = "inline-block";
+                if (navDeconectareBtn) navDeconectareBtn.style.display = "inline-block";
+
+                // Autorizare formular
+                logatUserId = user.uid;
+                authCheckMessage.style.display = "none";
+                contactForm.style.display = "block";
             } else {
-                // Dacă nu este autentificat, îl anunțăm politicos și îl trimitem la login.html
+                // Deconectat - Header Standard
+                if (navLogInBtn) navLogInBtn.style.display = "inline-block";
+                if (navTicheteBtn) navTicheteBtn.style.display = "none";
+                if (navDeconectareBtn) navDeconectareBtn.style.display = "none";
+
                 alert("Pentru a trimite o solicitare de intervenție și a urmări stadiul ei, te rugăm să te conectezi mai întâi în cont.");
                 window.location.replace("login.html");
             }
         });
 
-        // Trimitere Formular cu adăugarea ID-ului utilizatorului
+        // Evenimentul pentru butonul de Deconectare din Header
+        if (navDeconectareBtn) {
+            navDeconectareBtn.addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    console.log("Utilizatorul s-a deconectat.");
+                    window.location.replace("index.html");
+                }).catch((error) => {
+                    console.error("Eroare la deconectare:", error);
+                });
+            });
+        }
+
+        // Trimitere Formular în Firestore
         if(contactForm) {
             contactForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -149,7 +179,6 @@
                 submitBtn.disabled = true;
 
                 try {
-                    // 3. Salvăm în Firestore adăugând câmpul userId extras din contul curent
                     await addDoc(collection(db, "interventii"), {
                         clinica: document.getElementById('clinica').value,
                         sectie: document.getElementById('sectie').value,
@@ -158,13 +187,12 @@
                         mesaj: document.getElementById('mesaj').value,
                         data_solicitare: new Date().toLocaleString('ro-RO'),
                         status: "Nouă",
-                        userId: logatUserId // Legătura de aur! Acest câmp leagă tichetul de utilizatorul curent
+                        userId: logatUserId
                     });
 
                     alert("Succes! Solicitarea ta a fost trimisă.");
                     contactForm.reset();
 
-                    // 4. Redirecționăm utilizatorul direct la pagina LUI de tichete ca să își vadă tichetul proaspăt creat
                     setTimeout(() => {
                         window.location.replace("tichete.html");
                     }, 500);
