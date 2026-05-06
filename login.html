@@ -45,7 +45,6 @@
                     <p class="subtitle-form">Introdu datele de acces în portal.</p>
                     
                     <form class="login-form" id="loginForm">
-                        
                         <div class="form-group">
                             <label for="email">E-mail Profesional</label>
                             <input type="email" id="email" name="email" placeholder="nume@clinica.ro" required>
@@ -80,57 +79,46 @@
     </script>
 
     <script type="module">
-        // Importăm SDK-ul necesar pentru autentificare direct din CDN-ul oficial Firebase (v10)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // Configurația proiectului tău Firebase "proiect-de-diploma-larisa"
-        // TODO: Completează aceste valori cu datele tale din consola Firebase (Settings -> Project Settings)
+        // Configurația ta oficială Firebase
         const firebaseConfig = {
-            apiKey: "AICI_COPIEZI_API_KEY_UL_TAU",
+            apiKey: "AIzaSyDJkNtiqJv5MXUe1XNPJf4lBI3KSl9ns0w",
             authDomain: "proiect-de-diploma-larisa.firebaseapp.com",
             projectId: "proiect-de-diploma-larisa",
-            storageBucket: "proiect-de-diploma-larisa.appspot.com",
-            messagingSenderId: "AICI_COPIEZI_MESSAGING_SENDER_ID",
-            appId: "AICI_COPIEZI_APP_ID"
+            storageBucket: "proiect-de-diploma-larisa.firebasestorage.app",
+            messagingSenderId: "1080817521080",
+            appId: "1:1080817521080:web:329b2b604d2cd4056bbf4d",
+            measurementId: "G-F0HM8NZCJ8"
         };
 
-        // Inițializăm aplicația și serviciul de Autentificare
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // Selectăm elementele formularului tău din HTML
         const form = document.getElementById('loginForm');
         const emailInput = document.getElementById('email');
         const parolaInput = document.getElementById('parola');
 
-        // Ascultăm când utilizatorul apasă pe butonul de Log-in
         form.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Împiedicăm reîncărcarea paginii HTML
+            e.preventDefault();
 
             const email = emailInput.value;
             const parola = parolaInput.value;
 
             try {
-                // Încercăm logarea în Firebase cu email și parolă
                 const userCredential = await signInWithEmailAndPassword(auth, email, parola);
-                const user = userCredential.user;
+                console.log("Logat cu succes:", userCredential.user.email);
                 
-                console.log("Te-ai conectat cu succes! Email:", user.email);
-                
-                // Dacă logarea are succes, trimitem utilizatorul către pagina lui privată de tichete
+                // Trimite utilizatorul la pagina cu tichete după logare
                 window.location.href = "tichete.html";
 
             } catch (error) {
-                console.error("Eroare autentificare:", error.code, error.message);
-                
-                // Tratăm erorile comune pentru a-i arăta utilizatorului un mesaj clar
+                console.error("Eroare logare:", error);
                 if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-                    alert("Datele de conectare sunt incorecte. Verifică email-ul sau parola.");
-                } else if (error.code === 'auth/user-not-found') {
-                    alert("Nu există un cont cu această adresă de email.");
+                    alert("Email-ul sau parola este incorectă.");
                 } else {
-                    alert("Eroare la conectare: " + error.message);
+                    alert("A apărut o eroare la conectare. Încearcă din nou.");
                 }
             }
         });
