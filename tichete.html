@@ -76,29 +76,56 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('userEmail').innerText = user.email;
-                incarcaTichetele(user.uid);
+                determinaRolSiIncarca(user);
             } else {
                 // Dacă nu e logat, redirecționăm la login.html
                 window.location.href = "login.html";
             }
         });
 
-        // Preluăm tichetele utilizatorului curent
-        async function incarcaTichetele(userId) {
+        // Funcția inteligentă care decide ce tichete încarcă în funcție de adresa de email
+        async function determinaRolSiIncarca(user) {
+            const email = user.email.toLowerCase();
+            const ticheteRef = collection(db, "interventii");
+            let q;
+
+            if (email === "tehnician1@licenta.ro") {
+                // Tehnicianul 1 vede: injectomat, electrocauter, monitor triaj (notat monitor_triaj în baza ta de date)
+                q = query(ticheteRef, where("echipament", "in", ["injectomat", "electrocauter", "monitor_triaj"]));
+                console.log("S-au încărcat atribuțiile pentru Tehnician 1");
+                
+            } else if (email === "tehnician2@licenta.ro") {
+                // Tehnicianul 2 vede: infuzomat, ploscar, instalație de oxigen (notat oxigen în baza ta de date)
+                q = query(ticheteRef, where("echipament", "in", ["infuzomat", "ploscar", "oxigen"]));
+                console.log("S-au încărcat atribuțiile pentru Tehnician 2");
+                
+            } else if (email === "admin@licenta.ro") {
+                // Adminul vede toate tichetele, indiferent de echipament (inclusiv cele cu "altul")
+                q = query(ticheteRef);
+                console.log("S-au încărcat toate tichetele (Acces Admin)");
+                
+            } else {
+                // Clienții obișnuiți văd doar tichetele create de ei
+                q = query(ticheteRef, where("userId", "==", user.uid));
+                console.log("S-au încărcat tichetele proprii ale clientului");
+            }
+
+            // Rulăm interogarea stabilită
+            afiseazaTichete(q);
+        }
+
+        // Preluăm și afișăm tichetele selectate
+        async function afiseazaTichete(interogare) {
             try {
                 const container = document.getElementById('ticheteContainer');
-                const ticheteRef = collection(db, "interventii");
-                
-                // Interogare pentru tichete care conțin în câmpul userId id-ul logat
-                const q = query(ticheteRef, where("userId", "==", userId));
-                const querySnapshot = await getDocs(q);
+                const querySnapshot = await getDocs(interogare);
 
                 container.innerHTML = "";
 
                 if (querySnapshot.empty) {
                     container.innerHTML = `
                         <div style="background: #f9f9f9; padding: 30px; border-radius: 8px; text-align: center; border: 1px dashed #ccc; color: #666;">
-                            Nu ai nicio intervenție înregistrată pe acest cont.
+                            Nu există nicio intervenție înregistrată în această secțiune.
                         </div>`;
                     return;
                 }
@@ -108,19 +135,19 @@
                     const card = document.createElement('div');
                     card.style.cssText = "background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #00766c; border-top: 1px solid #f0f0f0; border-right: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0;";
                     
-                   card.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-        <h3 style="margin: 0; color: #333; font-size: 1.25em;">Echipament: ${dateTichet.echipament || 'Nespecificat'}</h3>
-        <span style="background: #e6f4ea; color: #137333; padding: 4px 10px; border-radius: 50px; font-size: 0.85em; font-weight: bold;">
-            Status: ${dateTichet.status || 'În așteptare'}
-        </span>
-    </div>
-    <p style="margin: 10px 0; color: #555; line-height: 1.5;"><strong>Descriere problemă:</strong> ${dateTichet.mesaj || 'Fără descriere.'}</p>
-    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #fafafa; display: flex; justify-content: space-between; font-size: 0.8em; color: #999;">
-        <span>ID Solicitare: ${doc.id}</span>
-        <span>Spital/Clinică: ${dateTichet.clinica || 'Nespecificat'}</span>
-    </div>
-`;
+                    card.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <h3 style="margin: 0; color: #333; font-size: 1.25em;">Echipament: ${dateTichet.echipament || 'Nespecificat'}</h3>
+                            <span style="background: #e6f4ea; color: #137333; padding: 4px 10px; border-radius: 50px; font-size: 0.85em; font-weight: bold;">
+                                Status: ${dateTichet.status || 'În așteptare'}
+                            </span>
+                        </div>
+                        <p style="margin: 10px 0; color: #555; line-height: 1.5;"><strong>Descriere problemă:</strong> ${dateTichet.mesaj || 'Fără descriere.'}</p>
+                        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #fafafa; display: flex; justify-content: space-between; font-size: 0.8em; color: #999;">
+                            <span>ID Solicitare: ${doc.id}</span>
+                            <span>Spital/Clinică: ${dateTichet.clinica || 'Nespecificat'}</span>
+                        </div>
+                    `;
                     container.appendChild(card);
                 });
 
