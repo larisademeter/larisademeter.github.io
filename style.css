@@ -427,6 +427,7 @@ footer {
         display: none !important;
     }
 }
+
 /* =========================================
    9. SISTEM DE NOTIFICĂRI (TOAST NOTIFICATIONS)
    ========================================= */
@@ -434,33 +435,34 @@ footer {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: white;
-    color: var(--dark-text);
-    padding: 15px 25px;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.15);
-    border-left: 5px solid var(--primary);
+    background: #ffffff !important;
+    color: #1e1b4b !important;
+    padding: 16px 28px;
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(139, 92, 246, 0.2);
+    border-left: 6px solid #8b5cf6;
     display: flex;
     align-items: center;
     gap: 12px;
-    z-index: 2000;
-    font-weight: 600;
+    z-index: 9999 !important; /* Ne asigurăm că apare peste orice alt element */
+    font-weight: 700;
     font-size: 0.95rem;
-    animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     transition: opacity 0.3s, transform 0.3s;
 }
 
 .toast-notification.success {
-    border-left-color: var(--turquoise);
+    border-left-color: #06b6d4 !important; /* Turcoaz */
 }
 
 .toast-notification.alert {
-    border-left-color: var(--secondary);
+    border-left-color: #ec4899 !important; /* Roz */
 }
 
 @keyframes slideInRight {
     from {
-        transform: translateX(100%);
+        transform: translateX(120%);
         opacity: 0;
     }
     to {
@@ -468,6 +470,7 @@ footer {
         opacity: 1;
     }
 }
+
 /* ANIMAȚIE HAMBURGER */
 .menu-toggle.active span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
 .menu-toggle.active span:nth-child(2) { opacity: 0; }
