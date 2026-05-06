@@ -96,6 +96,11 @@
                 <a href="index.html">Acasă</a>
                 <a href="tichete.html" id="navTicheteBtn" style="font-weight: bold; color: #9c27b0;">Tichetele Mele</a>
                 
+                <a href="notificari.html" class="notification-bell-container">
+                    <span class="notification-bell">🔔</span>
+                    <span id="bellBadge" class="notification-badge nav-hidden">0</span>
+                </a>
+
                 <span id="userEmail" style="margin: 0 15px; font-weight: bold; color: #7b2cbf; font-size: 0.95em;">Se încarcă...</span>
                 
                 <div class="nav-auth">
@@ -135,7 +140,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, query, where, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, query, where, doc, updateDoc, onSnapshot, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJkNtiqJv5MXUe1XNPJf4lBI3KSl9ns0w",
@@ -155,7 +160,6 @@
         let primaIncarcare = true;
         let stariAnterioareTichete = {};
 
-        // Creează și afișează dinamic caseta pop-up de notificare
         function arataNotificare(mesaj, tip = 'success') {
             const notificareVeche = document.querySelector('.toast-notification');
             if (notificareVeche) notificareVeche.remove();
@@ -178,10 +182,29 @@
             if (user) {
                 document.getElementById('userEmail').innerText = user.email;
                 determinaRolSiIncarca(user);
+                pornesteAscultatorBadge(user);
             } else {
                 window.location.href = "login.html";
             }
         });
+
+        // Ascultă numărul de notificări necitite pentru a actualiza badge-ul roșu din header
+        function pornesteAscultatorBadge(user) {
+            const notificariRef = collection(db, "notificari");
+            const q = query(notificariRef, where("destinatarId", "==", user.uid), where("citita", "==", false));
+            
+            onSnapshot(q, (querySnapshot) => {
+                const badge = document.getElementById('bellBadge');
+                const necititeCount = querySnapshot.size;
+                
+                if (necititeCount > 0) {
+                    badge.innerText = necititeCount;
+                    badge.classList.remove('nav-hidden');
+                } else {
+                    badge.classList.add('nav-hidden');
+                }
+            });
+        }
 
         // Verificăm rolurile și stabilim ce tichete aducem
         async function determinaRolSiIncarca(user) {
@@ -208,7 +231,7 @@
             afiseazaTichete(q);
         }
 
-        // Ascultăm și randerăm tichetele în timp real (onSnapshot)
+        // Ascultăm și randăm tichetele în timp real (onSnapshot)
         function afiseazaTichete(interogare) {
             const container = document.getElementById('ticheteContainer');
             
@@ -237,12 +260,10 @@
                     // --- DETECTARE SCHIMBĂRI PENTRU TOAST NOTIFICATIONS ---
                     if (!primaIncarcare) {
                         if (esteTehnicianSauAdmin) {
-                            // Dacă tehnicianul/adminul vede un id nou pe care nu îl avea stocat
                             if (!stariAnterioareTichete[idTichet]) {
                                 arataNotificare(`A apărut o solicitare nouă pentru: ${numeEchipament}!`, 'alert');
                             }
                         } else {
-                            // Dacă un client observă o schimbare de status la propriile tichete
                             const stareaVeche = stariAnterioareTichete[idTichet];
                             if (stareaVeche && stareaVeche !== statusActual) {
                                 arataNotificare(`Statusul solicitării (${numeEchipament}) a fost schimbat în: "${statusActual}"!`, 'success');
@@ -250,7 +271,6 @@
                         }
                     }
 
-                    // Stocăm valorile curente în memorie pentru următoarele modificări
                     stariAnterioareTichete[idTichet] = statusActual;
 
                     // --- DESIGN BADGE STATUS ---
@@ -314,10 +334,9 @@
                     container.appendChild(card);
                 });
 
-                // Setăm flag-ul de primă încărcare pe false la finalizarea primei randări
                 primaIncarcare = false;
 
-                // Ascultător pentru când tehnicianul/adminul schimbă statusul direct pe card
+                // Actualizare status dropdown + Trimitere notificare dedicată clientului
                 document.querySelectorAll('.status-select').forEach(select => {
                     select.addEventListener('change', async (e) => {
                         const docId = e.target.getAttribute('data-id');
@@ -328,9 +347,22 @@
                             await updateDoc(docRef, {
                                 status: noulStatus
                             });
-                            // Nu mai este nevoie de location.reload()! Interfața se actualizează automat prin onSnapshot
+
+                            const snapshotTichet = await getDoc(docRef);
+                            if (snapshotTichet.exists()) {
+                                const dateTichet = snapshotTichet.data();
+                                const notificariRef = collection(db, "notificari");
+                                
+                                await addDoc(notificariRef, {
+                                    destinatarId: dateTichet.userId,
+                                    mesaj: `Statusul solicitării dumneavoastră pentru "${dateTichet.echipament || 'Echipament'}" a fost modificat în: "${noulStatus}".`,
+                                    citita: false,
+                                    data: new Date(),
+                                    dataFormata: new Date().toLocaleString('ro-RO')
+                                });
+                            }
                         } catch (error) {
-                            console.error("Eroare update status:", error);
+                            console.error("Eroare update status sau trimitere notificare:", error);
                             alert("Eroare la modificarea statusului.");
                         }
                     });
