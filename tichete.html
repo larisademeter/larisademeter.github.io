@@ -55,7 +55,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Configurația ta oficială Firebase
         const firebaseConfig = {
@@ -72,49 +72,45 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        let esteTehnicianSauAdmin = false;
+
         // Verificăm dacă utilizatorul este conectat
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('userEmail').innerText = user.email;
                 determinaRolSiIncarca(user);
             } else {
-                // Dacă nu e logat, redirecționăm la login.html
                 window.location.href = "login.html";
             }
         });
 
-        // Funcția inteligentă care decide ce tichete încarcă în funcție de adresa de email
+        // Determinăm rolul
         async function determinaRolSiIncarca(user) {
             const email = user.email.toLowerCase();
             const ticheteRef = collection(db, "interventii");
             let q;
 
-            if (email === "tehnician1@licenta.ro") {
-                // Tehnicianul 1 vede: injectomat, electrocauter, monitor triaj (notat monitor_triaj în baza ta de date)
-                q = query(ticheteRef, where("echipament", "in", ["injectomat", "electrocauter", "monitor_triaj"]));
-                console.log("S-au încărcat atribuțiile pentru Tehnician 1");
-                
-            } else if (email === "tehnician2@licenta.ro") {
-                // Tehnicianul 2 vede: infuzomat, ploscar, instalație de oxigen (notat oxigen în baza ta de date)
-                q = query(ticheteRef, where("echipament", "in", ["infuzomat", "ploscar", "oxigen"]));
-                console.log("S-au încărcat atribuțiile pentru Tehnician 2");
-                
-            } else if (email === "admin@licenta.ro") {
-                // Adminul vede toate tichetele, indiferent de echipament (inclusiv cele cu "altul")
-                q = query(ticheteRef);
-                console.log("S-au încărcat toate tichetele (Acces Admin)");
-                
+            // Verificăm dacă utilizatorul curent are drepturi de modificare (tehnician sau admin)
+            if (email === "tehnician1@licenta.ro" || email === "tehnician2@licenta.ro" || email === "admin@licenta.ro") {
+                esteTehnicianSauAdmin = true;
             } else {
-                // Clienții obișnuiți văd doar tichetele create de ei
-                q = query(ticheteRef, where("userId", "==", user.uid));
-                console.log("S-au încărcat tichetele proprii ale clientului");
+                esteTehnicianSauAdmin = false;
             }
 
-            // Rulăm interogarea stabilită
+            if (email === "tehnician1@licenta.ro") {
+                q = query(ticheteRef, where("echipament", "in", ["injectomat", "electrocauter", "monitor_triaj"]));
+            } else if (email === "tehnician2@licenta.ro") {
+                q = query(ticheteRef, where("echipament", "in", ["infuzomat", "ploscar", "oxigen"]));
+            } else if (email === "admin@licenta.ro") {
+                q = query(ticheteRef);
+            } else {
+                q = query(ticheteRef, where("userId", "==", user.uid));
+            }
+
             afiseazaTichete(q);
         }
 
-        // Preluăm și afișăm tichetele selectate
+        // Afișăm tichetele și adăugăm opțiunea de schimbare a statusului pentru tehnicieni/admin
         async function afiseazaTichete(interogare) {
             try {
                 const container = document.getElementById('ticheteContainer');
@@ -130,25 +126,81 @@
                     return;
                 }
 
-                querySnapshot.forEach((doc) => {
-                    const dateTichet = doc.data();
+                querySnapshot.forEach((docSnap) => {
+                    const dateTichet = docSnap.data();
                     const card = document.createElement('div');
                     card.style.cssText = "background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #00766c; border-top: 1px solid #f0f0f0; border-right: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0;";
                     
-                    card.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                            <h3 style="margin: 0; color: #333; font-size: 1.25em;">Echipament: ${dateTichet.echipament || 'Nespecificat'}</h3>
-                            <span style="background: #e6f4ea; color: #137333; padding: 4px 10px; border-radius: 50px; font-size: 0.85em; font-weight: bold;">
-                                Status: ${dateTichet.status || 'În așteptare'}
+                    const statusActual = dateTichet.status || 'În așteptare';
+                    
+                    // Stabilim culoarea badge-ului de status în funcție de stadiu
+                    let statusColor = "#137333"; // verde pentru rezolvată / nouă
+                    let statusBg = "#e6f4ea";
+                    if (statusActual === "În curs de rezolvare") {
+                        statusColor = "#b06000"; // portocaliu
+                        statusBg = "#fef7e0";
+                    } else if (statusActual === "Nouă") {
+                        statusColor = "#1a73e8"; // albastru
+                        statusBg = "#e8f0fe";
+                    }
+
+                    // Construim elementul vizual de status: text simplu pentru clienți SAU meniu derulant (select) pentru tehnicieni/admin
+                    let statusElementHTML = "";
+                    if (esteTehnicianSauAdmin) {
+                        statusElementHTML = `
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label style="font-size: 0.85em; font-weight: bold; color: #666;">Schimbă Status:</label>
+                                <select class="status-select" data-id="${docSnap.id}" style="padding: 5px 10px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; background: #fff; cursor: pointer;">
+                                    <option value="Nouă" ${statusActual === "Nouă" ? "selected" : ""}>Nouă</option>
+                                    <option value="În curs de rezolvare" ${statusActual === "În curs de rezolvare" ? "selected" : ""}>În curs de rezolvare</option>
+                                    <option value="Rezolvată" ${statusActual === "Rezolvată" ? "selected" : ""}>Rezolvată</option>
+                                </select>
+                            </div>
+                        `;
+                    } else {
+                        statusElementHTML = `
+                            <span style="background: ${statusBg}; color: ${statusColor}; padding: 4px 10px; border-radius: 50px; font-size: 0.85em; font-weight: bold;">
+                                Status: ${statusActual}
                             </span>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                            <h3 style="margin: 0; color: #333; font-size: 1.25em;">Echipament: ${dateTichet.echipament || 'Nespecificat'}</h3>
+                            ${statusElementHTML}
                         </div>
                         <p style="margin: 10px 0; color: #555; line-height: 1.5;"><strong>Descriere problemă:</strong> ${dateTichet.mesaj || 'Fără descriere.'}</p>
                         <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #fafafa; display: flex; justify-content: space-between; font-size: 0.8em; color: #999;">
-                            <span>ID Solicitare: ${doc.id}</span>
+                            <span>ID Solicitare: ${docSnap.id}</span>
                             <span>Spital/Clinică: ${dateTichet.clinica || 'Nespecificat'}</span>
                         </div>
                     `;
                     container.appendChild(card);
+                });
+
+                // Adăugăm eveniment de schimbare în baza de date pentru toate meniurile derulante randate
+                document.querySelectorAll('.status-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const docId = e.target.getAttribute('data-id');
+                        const noulStatus = e.target.value;
+                        
+                        try {
+                            const docRef = doc(db, "interventii", docId);
+                            // Actualizăm câmpul 'status' în Firestore
+                            await updateDoc(docRef, {
+                                status: noulStatus
+                            });
+                            console.log(`Statusul tichetului ${docId} a fost actualizat la: ${noulStatus}`);
+                            alert(`Status schimbat cu succes în: "${noulStatus}"`);
+                            
+                            // Reîncărcăm pagina discret pentru a aplica noile culori/stiluri
+                            location.reload();
+                        } catch (error) {
+                            console.error("Eroare la actualizarea statusului:", error);
+                            alert("Nu aveți permisiunea de a modifica acest status.");
+                        }
+                    });
                 });
 
             } catch (error) {
