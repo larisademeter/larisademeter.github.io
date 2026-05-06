@@ -41,7 +41,7 @@ body {
 }
 
 /* =========================================
-   2. HEADER COMPACT & PASTEL (MĂRIT LOGO)
+   2. HEADER COMPACT & PASTEL
    ========================================= */
 header {
     background: var(--header-bg);
@@ -59,7 +59,7 @@ header {
 }
 
 .logo { 
-    height: 90px; /* Logo mare pentru desktop */
+    height: 90px; 
     width: auto;
     display: block;
     transition: var(--transition);
@@ -177,9 +177,16 @@ header {
     color: var(--light-text);
 }
 
-.section { padding: 80px 0; text-align: center; }
+.section { 
+    padding: 80px 0; 
+    text-align: center; 
+}
 
-h2 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
+h2 { 
+    font-size: 2.5rem; 
+    color: var(--primary); 
+    margin-bottom: 10px; 
+}
 
 .divider {
     width: 60px;
@@ -208,8 +215,17 @@ h2 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
     border-color: var(--turquoise); 
 }
 
-.card-icon { font-size: 3.5rem; margin-bottom: 20px; display: block; }
-.card h3 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; }
+.card-icon { 
+    font-size: 3.5rem; 
+    margin-bottom: 20px; 
+    display: block; 
+}
+
+.card h3 { 
+    font-size: 1.4rem; 
+    color: var(--primary); 
+    margin-bottom: 15px; 
+}
 
 /* Fundaluri Carduri */
 .card-accent-1 { background: linear-gradient(180deg, #ffffff, #fbfaff); }
@@ -217,7 +233,7 @@ h2 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
 .card-accent-3 { background: linear-gradient(180deg, #ffffff, #f0fdfa); }
 
 /* =========================================
-   4. PAGINA CONTACT (SPAȚIERE & CULOARE)
+   4. PAGINA CONTACT & LOG IN (COMMONS)
    ========================================= */
 .bg-contact, .bg-login {
     background: linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%);
@@ -251,9 +267,11 @@ h2 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
     color: var(--light-text);
 }
 
-.form-group { margin-bottom: 25px; text-align: left; }
+.form-group { 
+    margin-bottom: 25px; 
+    text-align: left; 
+}
 
-/* SPAȚIEREA SUB LABEL */
 .form-group label {
     display: block;
     margin-bottom: 12px; 
@@ -267,7 +285,7 @@ h2 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
     border: 2px solid #f1f5f9;
     border-radius: 15px;
     background-color: #f8faff;
-    font-size: 16px; /* Fix zoom iPhone */
+    font-size: 16px;
     transition: var(--transition);
 }
 
@@ -278,7 +296,11 @@ h2 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
     box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.1);
 }
 
-.btn-full { width: 100%; padding: 18px; font-size: 1.1rem; }
+.btn-full { 
+    width: 100%; 
+    padding: 18px; 
+    font-size: 1.1rem; 
+}
 
 /* =========================================
    5. PAGINA LOG IN (SPLIT DESIGN)
@@ -304,15 +326,30 @@ h2 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
     text-align: center;
 }
 
-.visual-icon { font-size: 5rem; margin-bottom: 20px; display: block; }
-.login-form-panel { padding: 60px; }
-.forgot-link { color: var(--turquoise); text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+.visual-icon { 
+    font-size: 5rem; 
+    margin-bottom: 20px; 
+    display: block; 
+}
+
+.login-form-panel { 
+    padding: 60px; 
+}
 
 /* =========================================
    6. FOOTER & ECHIPA
    ========================================= */
-.about-highlight { background: #fdfbff; padding: 80px 0; text-align: center; }
-.about-highlight h2 { background: var(--grad-vibrant); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.about-highlight { 
+    background: #fdfbff; 
+    padding: 80px 0; 
+    text-align: center; 
+}
+
+.about-highlight h2 { 
+    background: var(--grad-vibrant); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+}
 
 footer {
     background: var(--dark-text);
@@ -323,10 +360,32 @@ footer {
 }
 
 /* =========================================
-   7. RESPONSIVE (TELEFON)
+   7. CLASE DE UTILITATE (FIREBASE DYNAMICS)
+   ========================================= */
+.nav-hidden {
+    display: none !important;
+}
+
+#navTicheteBtn {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: var(--transition);
+    align-self: center;
+}
+
+#navTicheteBtn:hover {
+    color: var(--secondary);
+}
+
+/* =========================================
+   8. RESPONSIVE (TELEFON)
    ========================================= */
 @media (max-width: 768px) {
-    .logo { height: 75px; } /* Logo mai mare pe mobil */
+    .logo { height: 75px; }
     
     .hero-title { font-size: 2.2rem; }
     
@@ -349,9 +408,16 @@ footer {
     
     .nav-auth { flex-direction: column; width: 80%; }
     
-    .btn-nav-contact, .btn-nav-home, .btn-login { width: 100%; text-align: center; margin-top: 10px; }
+    .btn-nav-contact, .btn-nav-home, .btn-login { 
+        width: 100%; 
+        text-align: center; 
+        margin-top: 10px; 
+    }
 
-    .form-wrapper, .login-form-panel { padding: 30px 20px; border-radius: 20px; }
+    .form-wrapper, .login-form-panel { 
+        padding: 30px 20px; 
+        border-radius: 20px; 
+    }
     
     .login-split { grid-template-columns: 1fr; }
     .login-visual { padding: 40px; }
