@@ -168,7 +168,6 @@
             toast.className = `toast-notification ${tip}`;
             toast.innerHTML = `🔔 <span>${mesaj}</span>`;
             
-            // Adăugăm un pic de stil de bază direct din JS în caz că lipsește din style.css
             toast.style.position = 'fixed';
             toast.style.bottom = '20px';
             toast.style.right = '20px';
@@ -193,7 +192,6 @@
             }, 5000);
         }
 
-        // Verificăm conectarea utilizatorului
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('userEmail').innerText = user.email;
@@ -204,7 +202,6 @@
             }
         });
 
-        // Ascultă numărul de notificări necitite pentru a actualiza badge-ul roșu din header
         function pornesteAscultatorBadge(user) {
             const notificariRef = collection(db, "notificari");
             const q = query(notificariRef, where("destinatarId", "==", user.uid), where("citita", "==", false));
@@ -222,7 +219,6 @@
             });
         }
 
-        // Verificăm rolurile și stabilim ce tichete aducem
         async function determinaRolSiIncarca(user) {
             const email = user.email.toLowerCase();
             const ticheteRef = collection(db, "interventii");
@@ -247,7 +243,6 @@
             afiseazaTichete(q);
         }
 
-        // Ascultăm și randăm tichetele în timp real (onSnapshot)
         function afiseazaTichete(interogare) {
             const container = document.getElementById('ticheteContainer');
             
@@ -273,7 +268,6 @@
                     const idTichet = docSnap.id;
                     const numeEchipament = dateTichet.echipament || 'Echipament Nespecificat';
 
-                    // --- DETECTARE SCHIMBĂRI PENTRU TOAST NOTIFICATIONS ---
                     if (!primaIncarcare) {
                         if (esteTehnicianSauAdmin) {
                             if (!stariAnterioareTichete[idTichet]) {
@@ -289,7 +283,6 @@
 
                     stariAnterioareTichete[idTichet] = statusActual;
 
-                    // --- DESIGN BADGE STATUS ---
                     let statusColor = "#008f83"; 
                     let statusBg = "#e6faf8";    
                     
@@ -352,7 +345,7 @@
 
                 primaIncarcare = false;
 
-                // --- ATASARE EVENIMENT DE SCHIMBARE DE STATUS DIRECT DUPA RANDARE ---
+                // --- SISTEMUL AUTOMAT DE DISTRIBUIRE A NOTIFICĂRILOR LA SCHIMBAREA STATUSULUI ---
                 document.querySelectorAll('.status-select').forEach(select => {
                     select.addEventListener('change', async (e) => {
                         const docId = e.target.getAttribute('data-id');
@@ -360,35 +353,69 @@
                         
                         try {
                             const docRef = doc(db, "interventii", docId);
-                            await updateDoc(docRef, {
-                                status: noulStatus
-                            });
+                            await updateDoc(docRef, { status: noulStatus });
 
                             const snapshotTichet = await getDoc(docRef);
                             if (snapshotTichet.exists()) {
                                 const dateTichet = snapshotTichet.data();
-                                
-                                // Protecție: trimitem notificarea doar dacă tichetul are un userId valid
+                                const notificariRef = collection(db, "notificari");
+                                const acum = new Date();
+                                const dataText = acum.toLocaleString('ro-RO');
+
+                                // =========================================================
+                                // CONFIGURARE UID-URI (ÎNLOCUIEȘTE-LE CU CELE REALE DIN AUTHENTICATION!)
+                                // =========================================================
+                                const uidAdmin = "UID_REALE_ADMIN_AICI";       
+                                const uidTehnician1 = "UID_TEHNICIAN1_AICI";  
+                                const uidTehnician2 = "UID_TEHNICIAN2_AICI";  
+                                // =========================================================
+
+                                const echipamentCurent = (dateTichet.echipament || "").toLowerCase();
+
+                                // 1. TRIMITEM NOTIFICARE CĂTRE CLIENT
                                 if (dateTichet.userId) {
-                                    const notificariRef = collection(db, "notificari");
-                                    
                                     await addDoc(notificariRef, {
                                         destinatarId: dateTichet.userId,
                                         mesaj: `Statusul solicitării dumneavoastră pentru "${dateTichet.echipament || 'Echipament'}" a fost modificat în: "${noulStatus}".`,
                                         citita: false,
-                                        data: new Date(),
-                                        dataFormata: new Date().toLocaleString('ro-RO')
+                                        data: acum,
+                                        dataFormata: dataText
                                     });
-                                    
-                                    // Afișăm toast notification-ul tău elegant de succes!
-                                    arataNotificare(`Statusul a fost actualizat cu succes în "${noulStatus}"!`, 'success');
-                                } else {
-                                    console.warn("Tichetul nu are asociat un userId. Statusul s-a salvat în baza de date, dar nu s-a generat o notificare.");
-                                    arataNotificare(`Status salvat, dar clientul nu are ID valid.`, 'alert');
                                 }
+
+                                // 2. TRIMITEM NOTIFICARE CĂTRE TEHNICIANUL RESPONSABIL
+                                let destinatarTehnicianId = null;
+                                if (["injectomat", "electrocauter", "monitor_triaj"].includes(echipamentCurent)) {
+                                    destinatarTehnicianId = uidTehnician1;
+                                } else if (["infuzomat", "ploscar", "oxigen"].includes(echipamentCurent)) {
+                                    destinatarTehnicianId = uidTehnician2;
+                                }
+
+                                if (destinatarTehnicianId) {
+                                    await addDoc(notificariRef, {
+                                        destinatarId: destinatarTehnicianId,
+                                        mesaj: `Echipamentul "${dateTichet.echipament}" din aria ta de acoperire a fost actualizat la statusul: "${noulStatus}".`,
+                                        citita: false,
+                                        data: acum,
+                                        dataFormata: dataText
+                                    });
+                                }
+
+                                // 3. TRIMITEM NOTIFICARE CĂTRE ADMINISTRATOR (Primește toate actualizările, inclusiv categoria 'altul')
+                                if (uidAdmin && uidAdmin !== "UID_REALE_ADMIN_AICI") {
+                                    await addDoc(notificariRef, {
+                                        destinatarId: uidAdmin,
+                                        mesaj: `Notificare Management: Tichetul [ID: ${docId}] (${dateTichet.echipament || 'altul'}) are statusul nou: "${noulStatus}".`,
+                                        citita: false,
+                                        data: acum,
+                                        dataFormata: dataText
+                                    });
+                                }
+
+                                arataNotificare(`Status actualizat și notificări transmise sincron!`, 'success');
                             }
                         } catch (error) {
-                            console.error("Eroare update status sau trimitere notificare:", error);
+                            console.error("Eroare execuție flux automat:", error);
                             arataNotificare("Eroare la modificarea statusului.", "alert");
                         }
                     });
@@ -400,7 +427,6 @@
             });
         }
 
-        // Delogare cu redirecționare directă spre index.html
         document.getElementById('btnDeconectare').addEventListener('click', () => {
             signOut(auth).then(() => {
                 window.location.replace("index.html");
