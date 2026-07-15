@@ -362,13 +362,10 @@
                                 const acum = new Date();
                                 const dataText = acum.toLocaleString('ro-RO');
 
-                                // =========================================================
-                                // CONFIGURARE UID-URI (ÎNLOCUIEȘTE-LE CU CELE REALE DIN AUTHENTICATION!)
-                                // =========================================================
-                                const uidAdmin = "UID_REALE_ADMIN_AICI";       
-                                const uidTehnician1 = "UID_TEHNICIAN1_AICI";  
-                                const uidTehnician2 = "UID_TEHNICIAN2_AICI";  
-                                // =========================================================
+                                // UID-uri reale preconfigurate:
+                                const uidAdmin = "Pva0NvpLRbWmHw7iApCPrTsRoMx2";       
+                                const uidTehnician1 = "xHRCQZ2QwiN7O2Mm7tqh3Jnhf8x1";  
+                                const uidTehnician2 = "lBnPTEXqOWY2GiuwoqVDFFGX2lL2";  
 
                                 const echipamentCurent = (dateTichet.echipament || "").toLowerCase();
 
@@ -383,7 +380,7 @@
                                     });
                                 }
 
-                                // 2. TRIMITEM NOTIFICARE CĂTRE TEHNICIANUL RESPONSABIL
+                                // 2. TRIMITEM NOTIFICARE CĂTRE TEHNICIANUL RESPONSABIL (Dupa maparea echipamentelor)
                                 let destinatarTehnicianId = null;
                                 if (["injectomat", "electrocauter", "monitor_triaj"].includes(echipamentCurent)) {
                                     destinatarTehnicianId = uidTehnician1;
@@ -401,8 +398,8 @@
                                     });
                                 }
 
-                                // 3. TRIMITEM NOTIFICARE CĂTRE ADMINISTRATOR (Primește toate actualizările, inclusiv categoria 'altul')
-                                if (uidAdmin && uidAdmin !== "UID_REALE_ADMIN_AICI") {
+                                // 3. TRIMITEM NOTIFICARE CĂTRE ADMINISTRATOR (Inclusiv categoria "altul")
+                                if (uidAdmin) {
                                     await addDoc(notificariRef, {
                                         destinatarId: uidAdmin,
                                         mesaj: `Notificare Management: Tichetul [ID: ${docId}] (${dateTichet.echipament || 'altul'}) are statusul nou: "${noulStatus}".`,
