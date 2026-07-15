@@ -168,6 +168,22 @@
             toast.className = `toast-notification ${tip}`;
             toast.innerHTML = `🔔 <span>${mesaj}</span>`;
             
+            // Adăugăm un pic de stil de bază direct din JS în caz că lipsește din style.css
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.right = '20px';
+            toast.style.background = tip === 'success' ? '#00c2b2' : '#ff4081';
+            toast.style.color = '#fff';
+            toast.style.padding = '15px 25px';
+            toast.style.borderRadius = '10px';
+            toast.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
+            toast.style.zIndex = '1000';
+            toast.style.transition = 'all 0.3s ease';
+            toast.style.display = 'flex';
+            toast.style.alignItems = 'center';
+            toast.style.gap = '10px';
+            toast.style.fontWeight = 'bold';
+            
             document.body.appendChild(toast);
 
             setTimeout(() => {
@@ -336,7 +352,7 @@
 
                 primaIncarcare = false;
 
-                // Actualizare status dropdown + Trimitere notificare dedicată clientului
+                // --- ATASARE EVENIMENT DE SCHIMBARE DE STATUS DIRECT DUPA RANDARE ---
                 document.querySelectorAll('.status-select').forEach(select => {
                     select.addEventListener('change', async (e) => {
                         const docId = e.target.getAttribute('data-id');
@@ -351,19 +367,29 @@
                             const snapshotTichet = await getDoc(docRef);
                             if (snapshotTichet.exists()) {
                                 const dateTichet = snapshotTichet.data();
-                                const notificariRef = collection(db, "notificari");
                                 
-                                await addDoc(notificariRef, {
-                                    destinatarId: dateTichet.userId,
-                                    mesaj: `Statusul solicitării dumneavoastră pentru "${dateTichet.echipament || 'Echipament'}" a fost modificat în: "${noulStatus}".`,
-                                    citita: false,
-                                    data: new Date(),
-                                    dataFormata: new Date().toLocaleString('ro-RO')
-                                });
+                                // Protecție: trimitem notificarea doar dacă tichetul are un userId valid
+                                if (dateTichet.userId) {
+                                    const notificariRef = collection(db, "notificari");
+                                    
+                                    await addDoc(notificariRef, {
+                                        destinatarId: dateTichet.userId,
+                                        mesaj: `Statusul solicitării dumneavoastră pentru "${dateTichet.echipament || 'Echipament'}" a fost modificat în: "${noulStatus}".`,
+                                        citita: false,
+                                        data: new Date(),
+                                        dataFormata: new Date().toLocaleString('ro-RO')
+                                    });
+                                    
+                                    // Afișăm toast notification-ul tău elegant de succes!
+                                    arataNotificare(`Statusul a fost actualizat cu succes în "${noulStatus}"!`, 'success');
+                                } else {
+                                    console.warn("Tichetul nu are asociat un userId. Statusul s-a salvat în baza de date, dar nu s-a generat o notificare.");
+                                    arataNotificare(`Status salvat, dar clientul nu are ID valid.`, 'alert');
+                                }
                             }
                         } catch (error) {
                             console.error("Eroare update status sau trimitere notificare:", error);
-                            alert("Eroare la modificarea statusului.");
+                            arataNotificare("Eroare la modificarea statusului.", "alert");
                         }
                     });
                 });
