@@ -157,8 +157,7 @@
         const db = getFirestore(app);
 
         let esteTehnicianSauAdmin = false;
-        let primaIncarcare = true;
-        let stariAnterioareTichete = {};
+        let primaIncarcareNotificari = true;
 
         function arataNotificare(mesaj, tip = 'success') {
             const notificareVeche = document.querySelector('.toast-notification');
@@ -172,11 +171,10 @@
             toast.style.bottom = '20px';
             toast.style.right = '20px';
             
-            // Setăm culorile dinamic: succes = turcoaz, alert = roșu intens, restul = roz
             if (tip === 'success') {
                 toast.style.background = '#00c2b2';
             } else if (tip === 'alert') {
-                toast.style.background = '#ff003c'; // Roșu de alertă strident pentru noile tichete
+                toast.style.background = '#ff003c'; // Roșu aprins pentru alerte de tichete noi
             } else {
                 toast.style.background = '#ff4081';
             }
@@ -198,20 +196,21 @@
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateY(20px)';
                 setTimeout(() => toast.remove(), 300);
-            }, 5000);
+            }, 6000);
         }
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('userEmail').innerText = user.email;
                 determinaRolSiIncarca(user);
-                pornesteAscultatorBadge(user);
+                pornesteAscultatoriNotificariSiBadge(user);
             } else {
                 window.location.href = "login.html";
             }
         });
 
-        function pornesteAscultatorBadge(user) {
+        // ASCULTĂTOR DIRECT PE CONEXIUNEA DE NOTIFICĂRI PENTRU BADGE ȘI POPUP PE MONITOR PRINCIPAL
+        function pornesteAscultatoriNotificariSiBadge(user) {
             const notificariRef = collection(db, "notificari");
             const q = query(notificariRef, where("destinatarId", "==", user.uid), where("citita", "==", false));
             
@@ -219,12 +218,33 @@
                 const badge = document.getElementById('bellBadge');
                 const necititeCount = querySnapshot.size;
                 
+                // Actualizare Badge Cifră Roșie
                 if (necititeCount > 0) {
                     badge.innerText = necititeCount;
                     badge.classList.remove('nav-hidden');
                 } else {
                     badge.classList.add('nav-hidden');
                 }
+
+                // --- DECLANȘARE POPUP PE ECRAN DIRECT DIN EVENIMENTUL DE NETWORK (NOTIFICĂRI NOI) ---
+                if (!primaIncarcareNotificari) {
+                    querySnapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            const dateNotif = change.doc.data();
+                            
+                            // Determinăm tipul vizual în funcție de conținutul mesajului primit
+                            let tipAlerta = 'success';
+                            if (dateNotif.mesaj.includes("Nouă") || dateNotif.mesaj.includes("NUĂ") || dateNotif.mesaj.includes("înregistrată")) {
+                                tipAlerta = 'alert'; // Va fi roșu strident pentru tichete noi
+                            }
+                            
+                            // Declanșăm popup-ul pe ecran
+                            arataNotificare(dateNotif.mesaj, tipAlerta);
+                        }
+                    });
+                }
+                
+                primaIncarcareNotificari = false;
             });
         }
 
@@ -256,9 +276,6 @@
             const container = document.getElementById('ticheteContainer');
             
             onSnapshot(interogare, (querySnapshot) => {
-                const idUriNoiSosite = [];
-                querySnapshot.forEach(docSnap => idUriNoiSosite.push(docSnap.id));
-
                 container.innerHTML = "";
 
                 if (querySnapshot.empty) {
@@ -267,8 +284,6 @@
                             <span style="font-size: 2.5em; display:block; margin-bottom:10px;">📋</span>
                             Nu există nicio intervenție înregistrată în această secțiune.
                         </div>`;
-                    primaIncarcare = false;
-                    stariAnterioareTichete = {};
                     return;
                 }
 
@@ -280,24 +295,6 @@
                     const statusActual = dateTichet.status || 'În așteptare';
                     const idTichet = docSnap.id;
                     const numeEchipament = dateTichet.echipament || 'Echipament Nespecificat';
-
-                    // --- LOGICĂ DETECTARE SOLICITARE NOUĂ / SCHIMBARE STATUS (SINKPOPUP) ---
-                    if (!primaIncarcare) {
-                        if (esteTehnicianSauAdmin) {
-                            // Dacă ID-ul tichetului nu exista în runda anterioară de date din sesiune, înseamnă că e complet nou!
-                            if (stariAnterioareTichete[idTichet] === undefined) {
-                                arataNotificare(`⚠️ Solicitare NOUĂ sosită în sistem pentru: "${numeEchipament}"!`, 'alert');
-                            }
-                        } else {
-                            const stareaVeche = stariAnterioareTichete[idTichet];
-                            if (stareaVeche && stareaVeche !== statusActual) {
-                                arataNotificare(`Statusul solicitării (${numeEchipament}) a fost schimbat în: "${statusActual}"!`, 'success');
-                            }
-                        }
-                    }
-
-                    // Actualizăm starea din cache-ul JavaScript local
-                    stariAnterioareTichete[idTichet] = statusActual;
 
                     let statusColor = "#008f83"; 
                     let statusBg = "#e6faf8";    
@@ -359,17 +356,7 @@
                     container.appendChild(card);
                 });
 
-                // Curățăm din memorie tichetele care au fost șterse din Firebase ca să evităm acumularea inutilă
-                Object.keys(stariAnterioareTichete).forEach(idLocal => {
-                    if (!idUriNoiSosite.includes(idLocal)) {
-                        delete stariAnterioareTichete[idLocal];
-                    }
-                });
-
-                // De îndată ce setul inițial de documente s-a descărcat din Firestore, deblocăm notificările pentru evenimentele ce urmează în timp real
-                primaIncarcare = false;
-
-                // --- SISTEMUL AUTOMAT DE DISTRIBUIRE A NOTIFICĂRILOR LA SCHIMBAREA STATUSULUI ---
+                // --- EVENIMENT DROPDOWN SCHIMBARE STATUS ---
                 document.querySelectorAll('.status-select').forEach(select => {
                     select.addEventListener('change', async (e) => {
                         const docId = e.target.getAttribute('data-id');
@@ -386,14 +373,13 @@
                                 const acum = new Date();
                                 const dataText = acum.toLocaleString('ro-RO');
 
-                                // UID-uri reale preconfigurate:
                                 const uidAdmin = "Pva0NvpLRbWmHw7iApCPrTsRoMx2";       
                                 const uidTehnician1 = "xHRCQZ2QwiN7O2Mm7tqh3Jnhf8x1";  
                                 const uidTehnician2 = "lBnPTEXqOWY2GiuwoqVDFFGX2lL2";  
 
                                 const echipamentCurent = (dateTichet.echipament || "").toLowerCase();
 
-                                // 1. TRIMITEM NOTIFICARE CĂTRE CLIENT
+                                // 1. Notificare Client
                                 if (dateTichet.userId) {
                                     await addDoc(notificariRef, {
                                         destinatarId: dateTichet.userId,
@@ -404,7 +390,7 @@
                                     });
                                 }
 
-                                // 2. TRIMITEM NOTIFICARE CĂTRE TEHNICIANUL RESPONSABIL (Dupa maparea echipamentelor)
+                                // 2. Notificare Tehnician
                                 let destinatarTehnicianId = null;
                                 if (["injectomat", "electrocauter", "monitor_triaj"].includes(echipamentCurent)) {
                                     destinatarTehnicianId = uidTehnician1;
@@ -422,7 +408,7 @@
                                     });
                                 }
 
-                                // 3. TRIMITEM NOTIFICARE CĂTRE ADMINISTRATOR (Inclusiv categoria "altul")
+                                // 3. Notificare Admin
                                 if (uidAdmin) {
                                     await addDoc(notificariRef, {
                                         destinatarId: uidAdmin,
@@ -432,12 +418,9 @@
                                         dataFormata: dataText
                                     });
                                 }
-
-                                arataNotificare(`Status actualizat și notificări transmise sincron!`, 'success');
                             }
                         } catch (error) {
                             console.error("Eroare execuție flux automat:", error);
-                            arataNotificare("Eroare la modificarea statusului.", "alert");
                         }
                     });
                 });
