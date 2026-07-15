@@ -105,7 +105,7 @@
             const container = document.getElementById('notificariContainer');
             const notificariRef = collection(db, "notificari");
             
-            // Receptăm notificările destinate utilizatorului curent, ordonate descrescător după dată
+            // Această interogare folosește indexul compus care se construiește acum în consolă
             const q = query(notificariRef, where("destinatarId", "==", user.uid), orderBy("data", "desc"));
 
             onSnapshot(q, (querySnapshot) => {
@@ -152,6 +152,13 @@
                 } else {
                     badge.classList.add('nav-hidden');
                 }
+            }, (error) => {
+                console.error("Eroare detaliată ascultare notificări:", error);
+                container.innerHTML = `
+                    <div style="background: #fff5f5; padding: 30px; border-radius: 16px; text-align: center; border: 1px solid #feb2b2; color: #c53030;">
+                        <span style="font-size: 2em; display:block; margin-bottom:10px;">⚠️</span>
+                        A apărut o eroare la încărcare. Dacă indexul este în curs de construire în Firebase, te rugăm să aștepți 1-2 minute și să reîncarci pagina.
+                    </div>`;
             });
         }
 
