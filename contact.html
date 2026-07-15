@@ -149,7 +149,6 @@
                 authCheckMessage.style.display = "none";
                 contactForm.style.display = "block";
 
-                // Monitorizare badge notificări în timp real pe pagina de Contact
                 const notificariRef = collection(db, "notificari");
                 const q = query(notificariRef, where("destinatarId", "==", user.uid), where("citita", "==", false));
                 
@@ -196,20 +195,66 @@
             contactForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
+                const clinicaVal = document.getElementById('clinica').value;
+                const sectieVal = document.getElementById('sectie').value;
+                const motivVal = document.getElementById('motiv').value;
+                const echipamentVal = document.getElementById('echipament').value;
+                const mesajVal = document.getElementById('mesaj').value;
+
                 submitBtn.innerText = "Se trimite...";
                 submitBtn.disabled = true;
 
                 try {
+                    // 1. Salvăm tichetul în colecția "interventii"
                     await addDoc(collection(db, "interventii"), {
-                        clinica: document.getElementById('clinica').value,
-                        sectie: document.getElementById('sectie').value,
-                        motiv: document.getElementById('motiv').value,
-                        echipament: document.getElementById('echipament').value,
-                        mesaj: document.getElementById('mesaj').value,
+                        clinica: clinicaVal,
+                        sectie: sectieVal,
+                        motiv: motivVal,
+                        echipament: echipamentVal,
+                        mesaj: mesajVal,
                         data_solicitare: new Date().toLocaleString('ro-RO'),
                         status: "Nouă",
                         userId: logatUserId
                     });
+
+                    // 2. GENERARE AUTOMATĂ NOTIFICĂRI DIRECT ÎN BAZA DE DATE
+                    const notificariRef = collection(db, "notificari");
+                    const acum = new Date();
+                    const dataText = acum.toLocaleString('ro-RO');
+
+                    // UID-urile tale oficiale din sistem:
+                    const uidAdmin = "Pva0NvpLRbWmHw7iApCPrTsRoMx2";       
+                    const uidTehnician1 = "xHRCQZ2QwiN7O2Mm7tqh3Jnhf8x1";  
+                    const uidTehnician2 = "lBnPTEXqOWY2GiuwoqVDFFGX2lL2";  
+
+                    const echipamentCheie = echipamentVal.toLowerCase();
+
+                    // A. Trimitere automată către Administrator (Adminul le primește pe toate, inclusiv categoria 'altul')
+                    await addDoc(notificariRef, {
+                        destinatarId: uidAdmin,
+                        mesaj: `Manager: A fost înregistrat un tichet NOU pentru aparatul "${echipamentVal}" (Locație: ${clinicaVal} | Secție: ${sectieVal || 'Nespecificată'}).`,
+                        citita: false,
+                        data: acum,
+                        dataFormata: dataText
+                    });
+
+                    // B. Trimitere automată către Tehnicianul dedicat pe baza grupării echipamentelor
+                    let tehnicianIdResponsabil = null;
+                    if (["injectomat", "electrocauter", "monitor_triaj"].includes(echipamentCheie)) {
+                        tehnicianIdResponsabil = uidTehnician1;
+                    } else if (["infuzomat", "ploscar", "oxigen"].includes(echipamentCheie)) {
+                        tehnicianIdResponsabil = uidTehnician2;
+                    }
+
+                    if (tehnicianIdResponsabil) {
+                        await addDoc(notificariRef, {
+                            destinatarId: tehnicianIdResponsabil,
+                            mesaj: `Inginerie Service: O solicitare NOUĂ pentru "${echipamentVal}" a fost înregistrată în aria ta tehnică.`,
+                            citita: false,
+                            data: acum,
+                            dataFormata: dataText
+                        });
+                    }
 
                     alert("Succes! Solicitarea ta a fost trimisă.");
                     contactForm.reset();
@@ -219,7 +264,7 @@
                     }, 500);
 
                 } catch (error) {
-                    console.error("Eroare:", error);
+                    console.error("Eroare execuție formular sau notificări:", error);
                     alert("Eroare la trimitere. Contactați administratorul.");
                     submitBtn.innerText = "Trimite Solicitarea";
                     submitBtn.disabled = false;
