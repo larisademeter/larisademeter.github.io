@@ -100,12 +100,12 @@
             }
         });
 
-        // Încarcă și ascultă notificările utilizatorului în timp real
+        // Încarcă exclusiv notificările destinate utilizatorului logat în mod direct
         function incarcaNotificari(user) {
             const container = document.getElementById('notificariContainer');
             const notificariRef = collection(db, "notificari");
             
-            // Această interogare folosește indexul compus care se construiește acum în consolă
+            // Această interogare filtrează strict după UID-ul utilizatorului logat (indiferent de rol)
             const q = query(notificariRef, where("destinatarId", "==", user.uid), orderBy("data", "desc"));
 
             onSnapshot(q, (querySnapshot) => {
@@ -157,7 +157,7 @@
                 container.innerHTML = `
                     <div style="background: #fff5f5; padding: 30px; border-radius: 16px; text-align: center; border: 1px solid #feb2b2; color: #c53030;">
                         <span style="font-size: 2em; display:block; margin-bottom:10px;">⚠️</span>
-                        A apărut o eroare la încărcare. Dacă indexul este în curs de construire în Firebase, te rugăm să aștepți 1-2 minute și să reîncarci pagina.
+                        A apărut o eroare la încărcarea notificărilor.
                     </div>`;
             });
         }
@@ -180,7 +180,7 @@
             if (modificatCeva) {
                 try {
                     await batch.commit();
-                    console.log("Toate notificările au fost marcate ca citite.");
+                    console.log("Toate notificările tale au fost marcate ca citite.");
                 } catch (error) {
                     console.error("Eroare la marcarea notificărilor ca citite:", error);
                 }
