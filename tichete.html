@@ -1,443 +1,218 @@
-<!DOCTYPE html>
-<html lang="ro">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tichetele Mele | L.D. Service Medical</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        /* Suprascriere stiluri specifice pentru integrarea cromaticii brandului (Turcoaz, Mov, Roz) */
-        body {
-            background-color: #f7f5f9; /* Un fundal foarte deschis cu tentă caldă de mov/gri */
-        }
-        
-        .brand-title {
-            color: #333;
-            font-weight: 800;
-        }
+// ÎNLOCUIEȘTE DOAR FUNCȚIA afiseazaTichete ÎN tichete.html
 
-        /* Cardurile de tichete restilizate */
-        .ticket-card {
-            background: #ffffff;
-            padding: 25px;
-            margin-bottom: 25px;
-            border-radius: 16px;
-            box-shadow: 0 10px 20px rgba(142, 68, 173, 0.05); /* Umbră discretă violet */
-            border-left: 6px solid #00c2b2; /* Margine accent Turcoaz */
-            border-top: 1px solid #f1ebf7;
-            border-right: 1px solid #f1ebf7;
-            border-bottom: 1px solid #f1ebf7;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+function afiseazaTichete(interogare) {
+    const container = document.getElementById('ticheteContainer');
+    
+    // Funcție ajutătoare care transformă textul "DD.MM.YYYY, HH:MM:SS" într-un obiect Date pentru sortare corectă
+    function parseazaData(dataString) {
+        if (!dataString) return new Date(0);
+        try {
+            const parti = dataString.split(', ');
+            if (parti.length < 2) return new Date(0);
+            const dateParti = parti[0].split('.'); // [DD, MM, YYYY]
+            const timpParti = parti[1].split(':'); // [HH, MM, SS]
+            // Notă: Luna în JS începe de la 0 (ianuarie), de aceea facem -1
+            return new Date(dateParti[2], dateParti[1] - 1, dateParti[0], timpParti[0], timpParti[1], timpParti[2]);
+        } catch (e) {
+            console.error("Eroare la parsarea datei:", e);
+            return new Date(0);
         }
+    }
+    
+    onSnapshot(interogare, (querySnapshot) => {
+        const idUriNoiSosite = [];
+        querySnapshot.forEach(docSnap => idUriNoiSosite.push(docSnap.id));
 
-        .ticket-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 24px rgba(142, 68, 173, 0.1);
-        }
+        container.innerHTML = "";
 
-        /* Detaliile secundare (secție, clinică, motiv etc.) sub formă de tag-uri elegante */
-        .info-badge {
-            display: inline-flex;
-            align-items: center;
-            background: #f2eff6; /* Mov extrem de deschis */
-            color: #7b2cbf; /* Text Mov */
-            padding: 5px 12px;
-            border-radius: 8px;
-            font-size: 0.85em;
-            font-weight: 600;
-            margin-right: 10px;
-            margin-bottom: 8px;
+        if (querySnapshot.empty) {
+            container.innerHTML = `
+                <div style="background: #fdfbfe; padding: 40px; border-radius: 16px; text-align: center; border: 2px dashed #e1d5f2; color: #7b2cbf;">
+                    <span style="font-size: 2.5em; display:block; margin-bottom:10px;">📋</span>
+                    Nu există nicio intervenție înregistrată în această secțiune.
+                </div>`;
+            primaIncarcare = false;
+            stariAnterioareTichete = {};
+            return;
         }
 
-        .info-badge-turcoaz {
-            display: inline-flex;
-            align-items: center;
-            background: #e6faf8; /* Turcoaz deschis */
-            color: #008f83; /* Text Turcoaz închis */
-            padding: 5px 12px;
-            border-radius: 8px;
-            font-size: 0.85em;
-            font-weight: 600;
-            margin-right: 10px;
-            margin-bottom: 8px;
-        }
-
-        /* Stil pentru meniurile derulante de schimbare status (Tehnicieni/Admin) */
-        .status-select {
-            padding: 8px 14px;
-            border-radius: 10px;
-            border: 2px solid #e1d5f2;
-            font-weight: 700;
-            background: #ffffff;
-            color: #6a1b9a; /* Text Violet */
-            cursor: pointer;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .status-select:focus {
-            border-color: #00c2b2; /* Se colorează în Turcoaz la selectare */
-        }
-    </style>
-</head>
-<body>
-
-    <header>
-        <div class="container header-content">
-            <a href="index.html" class="brand">
-                <img src="logo.png" alt="L.D. Service Medical" class="logo">
-            </a>
-            <button class="menu-toggle" aria-label="Meniu">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </button>
-            <nav class="main-nav">
-                <a href="index.html">Acasă</a>
-                <a href="tichete.html" id="navTicheteBtn" style="font-weight: bold; color: #9c27b0;">Tichetele Mele</a>
-                
-                <a href="notificari.html" class="notification-bell-container">
-                    <span class="notification-bell">🔔</span>
-                    <span id="bellBadge" class="notification-badge nav-hidden">0</span>
-                </a>
-
-                <span id="userEmail" style="margin: 0 15px; font-weight: bold; color: #7b2cbf; font-size: 0.95em;">Se încarcă...</span>
-                
-                <div class="nav-auth">
-                    <button id="btnDeconectare" class="btn-nav-home">Deconectare</button>
-                    <a href="contact.html" class="btn-nav-contact">Contact</a>
-                </div>
-            </nav>
-        </div>
-    </header>
-
-    <main class="section">
-        <div class="container" style="max-width: 800px; margin-top: 40px; min-height: 60vh;">
-            <h2 style="color: #4a154b; margin-bottom: 8px; font-weight: 800;">Intervențiile și Tichetele Mele</h2>
-            <p style="color: #666; margin-bottom: 30px; font-size: 1.05em;">Monitorizează în timp real stadiul solicitărilor tale de service.</p>
-            
-            <div id="ticheteContainer">
-                <p style="color: #888; text-align: center;">Se încarcă tichetele tale...</p>
-            </div>
-        </div>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p>&copy; 2026 L.D. Service Medical. Partenerul tău în tehnologie medicală.</p>
-        </div>
-    </footer>
-
-    <script>
-        const toggle = document.querySelector('.menu-toggle');
-        const nav = document.querySelector('.main-nav');
-        toggle.addEventListener('click', () => {
-            toggle.classList.toggle('active');
-            nav.classList.toggle('active');
-        });
-    </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, query, where, doc, updateDoc, onSnapshot, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDJkNtiqJv5MXUe1XNPJf4lBI3KSl9ns0w",
-            authDomain: "proiect-de-diploma-larisa.firebaseapp.com",
-            projectId: "proiect-de-diploma-larisa",
-            storageBucket: "proiect-de-diploma-larisa.firebasestorage.app",
-            messagingSenderId: "1080817521080",
-            appId: "1:1080817521080:web:329b2b604d2cd4056bbf4d",
-            measurementId: "G-F0HM8NZCJ8"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let esteTehnicianSauAdmin = false;
-        let primaIncarcareNotificari = true;
-
-        function arataNotificare(mesaj, tip = 'success') {
-            const notificareVeche = document.querySelector('.toast-notification');
-            if (notificareVeche) notificareVeche.remove();
-
-            const toast = document.createElement('div');
-            toast.className = `toast-notification ${tip}`;
-            toast.innerHTML = `🔔 <span>${mesaj}</span>`;
-            
-            toast.style.position = 'fixed';
-            toast.style.bottom = '20px';
-            toast.style.right = '20px';
-            
-            if (tip === 'success') {
-                toast.style.background = '#00c2b2';
-            } else if (tip === 'alert') {
-                toast.style.background = '#ff003c'; // Roșu aprins pentru alerte de tichete noi
-            } else {
-                toast.style.background = '#ff4081';
-            }
-            
-            toast.style.color = '#fff';
-            toast.style.padding = '15px 25px';
-            toast.style.borderRadius = '10px';
-            toast.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
-            toast.style.zIndex = '1000';
-            toast.style.transition = 'all 0.3s ease';
-            toast.style.display = 'flex';
-            toast.style.alignItems = 'center';
-            toast.style.gap = '10px';
-            toast.style.fontWeight = 'bold';
-            
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(20px)';
-                setTimeout(() => toast.remove(), 300);
-            }, 6000);
-        }
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('userEmail').innerText = user.email;
-                determinaRolSiIncarca(user);
-                pornesteAscultatoriNotificariSiBadge(user);
-            } else {
-                window.location.href = "login.html";
-            }
+        // 1. Convertim snapshot-ul într-un Array de obiecte JS ca să le putem sorta
+        const listaTichete = [];
+        querySnapshot.forEach((docSnap) => {
+            listaTichete.push({
+                id: docSnap.id,
+                ...docSnap.data()
+            });
         });
 
-        // ASCULTĂTOR DIRECT PE CONEXIUNEA DE NOTIFICĂRI PENTRU BADGE ȘI POPUP PE MONITOR PRINCIPAL
-        function pornesteAscultatoriNotificariSiBadge(user) {
-            const notificariRef = collection(db, "notificari");
-            const q = query(notificariRef, where("destinatarId", "==", user.uid), where("citita", "==", false));
+        // 2. Sortăm tichetele în ordine cronologică inversă (cele mai noi să fie primele pe ecran)
+        listaTichete.sort((a, b) => {
+            const dataA = parseazaData(a.data_solicitare);
+            const dataB = parseazaData(b.data_solicitare);
+            return dataB - dataA; // Sortare descrescătoare
+        });
+
+        // 3. Randăm tichetele deja sortate în interfață
+        listaTichete.forEach((dateTichet) => {
+            const card = document.createElement('div');
+            card.className = "ticket-card";
             
-            onSnapshot(q, (querySnapshot) => {
-                const badge = document.getElementById('bellBadge');
-                const necititeCount = querySnapshot.size;
-                
-                // Actualizare Badge Cifră Roșie
-                if (necititeCount > 0) {
-                    badge.innerText = necititeCount;
-                    badge.classList.remove('nav-hidden');
+            const statusActual = dateTichet.status || 'În așteptare';
+            const idTichet = dateTichet.id;
+            const numeEchipament = dateTichet.echipament || 'Echipament Nespecificat';
+
+            // --- LOGICĂ DETECTARE SOLICITARE NOUĂ / SCHIMBARE STATUS ---
+            if (!primaIncarcare) {
+                if (esteTehnicianSauAdmin) {
+                    if (stariAnterioareTichete[idTichet] === undefined) {
+                        arataNotificare(`⚠️ Solicitare NOUĂ sosită în sistem pentru: "${numeEchipament}"!`, 'alert');
+                    }
                 } else {
-                    badge.classList.add('nav-hidden');
+                    const stareaVeche = stariAnterioareTichete[idTichet];
+                    if (stareaVeche && stareaVeche !== statusActual) {
+                        arataNotificare(`Statusul solicitării (${numeEchipament}) a fost schimbat în: "${statusActual}"!`, 'success');
+                    }
                 }
-
-                // --- DECLANȘARE POPUP PE ECRAN DIRECT DIN EVENIMENTUL DE NETWORK (NOTIFICĂRI NOI) ---
-                if (!primaIncarcareNotificari) {
-                    querySnapshot.docChanges().forEach((change) => {
-                        if (change.type === "added") {
-                            const dateNotif = change.doc.data();
-                            
-                            // Determinăm tipul vizual în funcție de conținutul mesajului primit
-                            let tipAlerta = 'success';
-                            if (dateNotif.mesaj.includes("Nouă") || dateNotif.mesaj.includes("NUĂ") || dateNotif.mesaj.includes("înregistrată")) {
-                                tipAlerta = 'alert'; // Va fi roșu strident pentru tichete noi
-                            }
-                            
-                            // Declanșăm popup-ul pe ecran
-                            arataNotificare(dateNotif.mesaj, tipAlerta);
-                        }
-                    });
-                }
-                
-                primaIncarcareNotificari = false;
-            });
-        }
-
-        async function determinaRolSiIncarca(user) {
-            const email = user.email.toLowerCase();
-            const ticheteRef = collection(db, "interventii");
-            let q;
-
-            if (email === "tehnician1@licenta.ro" || email === "tehnician2@licenta.ro" || email === "admin@licenta.ro") {
-                esteTehnicianSauAdmin = true;
-            } else {
-                esteTehnicianSauAdmin = false;
             }
 
-            if (email === "tehnician1@licenta.ro") {
-                q = query(ticheteRef, where("echipament", "in", ["injectomat", "electrocauter", "monitor_triaj"]));
-            } else if (email === "tehnician2@licenta.ro") {
-                q = query(ticheteRef, where("echipament", "in", ["infuzomat", "ploscar", "oxigen"]));
-            } else if (email === "admin@licenta.ro") {
-                q = query(ticheteRef);
-            } else {
-                q = query(ticheteRef, where("userId", "==", user.uid));
-            }
+            stariAnterioareTichete[idTichet] = statusActual;
 
-            afiseazaTichete(q);
-        }
-
-        function afiseazaTichete(interogare) {
-            const container = document.getElementById('ticheteContainer');
+            let statusColor = "#008f83"; 
+            let statusBg = "#e6faf8";    
             
-            onSnapshot(interogare, (querySnapshot) => {
-                container.innerHTML = "";
+            if (statusActual === "În curs de rezolvare") {
+                statusColor = "#9c27b0"; 
+                statusBg = "#f3e5f5";    
+            } else if (statusActual === "Nouă") {
+                statusColor = "#ff4081"; 
+                statusBg = "#fce4ec";    
+            }
 
-                if (querySnapshot.empty) {
-                    container.innerHTML = `
-                        <div style="background: #fdfbfe; padding: 40px; border-radius: 16px; text-align: center; border: 2px dashed #e1d5f2; color: #7b2cbf;">
-                            <span style="font-size: 2.5em; display:block; margin-bottom:10px;">📋</span>
-                            Nu există nicio intervenție înregistrată în această secțiune.
-                        </div>`;
-                    return;
-                }
+            let statusElementHTML = "";
+            if (esteTehnicianSauAdmin) {
+                statusElementHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.85em; font-weight: bold; color: #7b2cbf;">Status:</span>
+                        <select class="status-select" data-id="${idTichet}">
+                            <option value="Nouă" ${statusActual === "Nouă" ? "selected" : ""}>Nouă</option>
+                            <option value="În curs de rezolvare" ${statusActual === "În curs de rezolvare" ? "selected" : ""}>În curs de rezolvare</option>
+                            <option value="Rezolvată" ${statusActual === "Rezolvată" ? "selected" : ""}>Rezolvată</option>
+                        </select>
+                    </div>
+                `;
+            } else {
+                statusElementHTML = `
+                    <span style="background: ${statusBg}; color: ${statusColor}; padding: 6px 14px; border-radius: 50px; font-size: 0.85em; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                        ${statusActual}
+                    </span>
+                `;
+            }
 
-                querySnapshot.forEach((docSnap) => {
-                    const dateTichet = docSnap.data();
-                    const card = document.createElement('div');
-                    card.className = "ticket-card";
-                    
-                    const statusActual = dateTichet.status || 'În așteptare';
-                    const idTichet = docSnap.id;
-                    const numeEchipament = dateTichet.echipament || 'Echipament Nespecificat';
+            const sectia = dateTichet.sectie ? dateTichet.sectie : "Nespecificată";
+            const motivul = dateTichet.motiv === "service" ? "Reparație (Defect)" : "Mentenanță periodică";
+            const dataSolicitare = dateTichet.data_solicitare ? dateTichet.data_solicitare : "Fără dată";
 
-                    let statusColor = "#008f83"; 
-                    let statusBg = "#e6faf8";    
-                    
-                    if (statusActual === "În curs de rezolvare") {
-                        statusColor = "#9c27b0"; 
-                        statusBg = "#f3e5f5";    
-                    } else if (statusActual === "Nouă") {
-                        statusColor = "#ff4081"; 
-                        statusBg = "#fce4ec";    
-                    }
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+                    <h3 style="margin: 0; color: #4a154b; font-size: 1.35em; font-weight: 800;">🩺 ${numeEchipament}</h3>
+                    ${statusElementHTML}
+                </div>
 
-                    let statusElementHTML = "";
-                    if (esteTehnicianSauAdmin) {
-                        statusElementHTML = `
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 0.85em; font-weight: bold; color: #7b2cbf;">Status:</span>
-                                <select class="status-select" data-id="${idTichet}">
-                                    <option value="Nouă" ${statusActual === "Nouă" ? "selected" : ""}>Nouă</option>
-                                    <option value="În curs de rezolvare" ${statusActual === "În curs de rezolvare" ? "selected" : ""}>În curs de rezolvare</option>
-                                    <option value="Rezolvată" ${statusActual === "Rezolvată" ? "selected" : ""}>Rezolvată</option>
-                                </select>
-                            </div>
-                        `;
-                    } else {
-                        statusElementHTML = `
-                            <span style="background: ${statusBg}; color: ${statusColor}; padding: 6px 14px; border-radius: 50px; font-size: 0.85em; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
-                                ${statusActual}
-                            </span>
-                        `;
-                    }
+                <div style="margin-bottom: 15px;">
+                    <span class="info-badge-turcoaz">🏢 ${dateTichet.clinica || 'Nespecificată'}</span>
+                    <span class="info-badge">📍 Secție: ${sectia}</span>
+                    <span class="info-badge">🔧 Tip: ${motivul}</span>
+                </div>
 
-                    const sectia = dateTichet.sectie ? dateTichet.sectie : "Nespecificată";
-                    const motivul = dateTichet.motiv === "service" ? "Reparație (Defect)" : "Mentenanță periodică";
-                    const dataSolicitare = dateTichet.data_solicitare ? dateTichet.data_solicitare : "Fără dată";
+                <div style="background: #faf8fc; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 3px solid #ff4081;">
+                    <strong style="color: #4a154b; font-size: 0.9em; display: block; margin-bottom: 5px;">Descriere detaliată problemă:</strong>
+                    <p style="margin: 0; color: #444; line-height: 1.6; font-size: 0.95em;">${dateTichet.mesaj || 'Fără detalii suplimentare înregistrate.'}</p>
+                </div>
 
-                    card.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
-                            <h3 style="margin: 0; color: #4a154b; font-size: 1.35em; font-weight: 800;">🩺 ${numeEchipament}</h3>
-                            ${statusElementHTML}
-                        </div>
+                <div style="padding-top: 12px; border-top: 1px dashed #e1d5f2; display: flex; justify-content: space-between; font-size: 0.8em; color: #8c7b99; font-weight: 600;">
+                    <span>🆔 ID Solicitare: ${idTichet}</span>
+                    <span>📅 Data: ${dataSolicitare}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
 
-                        <div style="margin-bottom: 15px;">
-                            <span class="info-badge-turcoaz">🏢 ${dateTichet.clinica || 'Nespecificată'}</span>
-                            <span class="info-badge">📍 Secție: ${sectia}</span>
-                            <span class="info-badge">🔧 Tip: ${motivul}</span>
-                        </div>
+        Object.keys(stariAnterioareTichete).forEach(idLocal => {
+            if (!idUriNoiSosite.includes(idLocal)) {
+                delete stariAnterioareTichete[idLocal];
+            }
+        });
 
-                        <div style="background: #faf8fc; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 3px solid #ff4081;">
-                            <strong style="color: #4a154b; font-size: 0.9em; display: block; margin-bottom: 5px;">Descriere detaliată problemă:</strong>
-                            <p style="margin: 0; color: #444; line-height: 1.6; font-size: 0.95em;">${dateTichet.mesaj || 'Fără detalii suplimentare înregistrate.'}</p>
-                        </div>
+        primaIncarcare = false;
 
-                        <div style="padding-top: 12px; border-top: 1px dashed #e1d5f2; display: flex; justify-content: space-between; font-size: 0.8em; color: #8c7b99; font-weight: 600;">
-                            <span>🆔 ID Solicitare: ${idTichet}</span>
-                            <span>📅 Data: ${dataSolicitare}</span>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                });
+        // --- EVENIMENT DROPDOWN SCHIMBARE STATUS ---
+        document.querySelectorAll('.status-select').forEach(select => {
+            select.addEventListener('change', async (e) => {
+                const docId = e.target.getAttribute('data-id');
+                const noulStatus = e.target.value;
+                
+                try {
+                    const docRef = doc(db, "interventii", docId);
+                    await updateDoc(docRef, { status: noulStatus });
 
-                // --- EVENIMENT DROPDOWN SCHIMBARE STATUS ---
-                document.querySelectorAll('.status-select').forEach(select => {
-                    select.addEventListener('change', async (e) => {
-                        const docId = e.target.getAttribute('data-id');
-                        const noulStatus = e.target.value;
-                        
-                        try {
-                            const docRef = doc(db, "interventii", docId);
-                            await updateDoc(docRef, { status: noulStatus });
+                    const snapshotTichet = await getDoc(docRef);
+                    if (snapshotTichet.exists()) {
+                        const dateTichet = snapshotTichet.data();
+                        const notificariRef = collection(db, "notificari");
+                        const acum = new Date();
+                        const dataText = acum.toLocaleString('ro-RO');
 
-                            const snapshotTichet = await getDoc(docRef);
-                            if (snapshotTichet.exists()) {
-                                const dateTichet = snapshotTichet.data();
-                                const notificariRef = collection(db, "notificari");
-                                const acum = new Date();
-                                const dataText = acum.toLocaleString('ro-RO');
+                        const uidAdmin = "Pva0NvpLRbWmHw7iApCPrTsRoMx2";       
+                        const uidTehnician1 = "xHRCQZ2QwiN7O2Mm7tqh3Jnhf8x1";  
+                        const uidTehnician2 = "lBnPTEXqOWY2GiuwoqVDFFGX2lL2";  
 
-                                const uidAdmin = "Pva0NvpLRbWmHw7iApCPrTsRoMx2";       
-                                const uidTehnician1 = "xHRCQZ2QwiN7O2Mm7tqh3Jnhf8x1";  
-                                const uidTehnician2 = "lBnPTEXqOWY2GiuwoqVDFFGX2lL2";  
+                        const echipamentCurent = (dateTichet.echipament || "").toLowerCase();
 
-                                const echipamentCurent = (dateTichet.echipament || "").toLowerCase();
-
-                                // 1. Notificare Client
-                                if (dateTichet.userId) {
-                                    await addDoc(notificariRef, {
-                                        destinatarId: dateTichet.userId,
-                                        mesaj: `Statusul solicitării dumneavoastră pentru "${dateTichet.echipament || 'Echipament'}" a fost modificat în: "${noulStatus}".`,
-                                        citita: false,
-                                        data: acum,
-                                        dataFormata: dataText
-                                    });
-                                }
-
-                                // 2. Notificare Tehnician
-                                let destinatarTehnicianId = null;
-                                if (["injectomat", "electrocauter", "monitor_triaj"].includes(echipamentCurent)) {
-                                    destinatarTehnicianId = uidTehnician1;
-                                } else if (["infuzomat", "ploscar", "oxigen"].includes(echipamentCurent)) {
-                                    destinatarTehnicianId = uidTehnician2;
-                                }
-
-                                if (destinatarTehnicianId) {
-                                    await addDoc(notificariRef, {
-                                        destinatarId: destinatarTehnicianId,
-                                        mesaj: `Echipamentul "${dateTichet.echipament}" din aria ta de acoperire a fost actualizat la statusul: "${noulStatus}".`,
-                                        citita: false,
-                                        data: acum,
-                                        dataFormata: dataText
-                                    });
-                                }
-
-                                // 3. Notificare Admin
-                                if (uidAdmin) {
-                                    await addDoc(notificariRef, {
-                                        destinatarId: uidAdmin,
-                                        mesaj: `Notificare Management: Tichetul [ID: ${docId}] (${dateTichet.echipament || 'altul'}) are statusul nou: "${noulStatus}".`,
-                                        citita: false,
-                                        data: acum,
-                                        dataFormata: dataText
-                                    });
-                                }
-                            }
-                        } catch (error) {
-                            console.error("Eroare execuție flux automat:", error);
+                        if (dateTichet.userId) {
+                            await addDoc(notificariRef, {
+                                destinatarId: dateTichet.userId,
+                                mesaj: `Statusul solicitării dumneavoastră pentru "${dateTichet.echipament || 'Echipament'}" a fost modificat în: "${noulStatus}".`,
+                                citita: false,
+                                data: acum,
+                                dataFormata: dataText
+                            });
                         }
-                    });
-                });
 
-            }, (error) => {
-                console.error("Eroare ascultare în timp real:", error);
-                document.getElementById('ticheteContainer').innerHTML = "<p style='color: #d9534f; text-align: center;'>Eroare la încărcarea datelor în timp real.</p>";
-            });
-        }
+                        let destinatarTehnicianId = null;
+                        if (["injectomat", "electrocauter", "monitor_triaj"].includes(echipamentCurent)) {
+                            destinatarTehnicianId = uidTehnician1;
+                        } else if (["infuzomat", "ploscar", "oxigen"].includes(echipamentCurent)) {
+                            destinatarTehnicianId = uidTehnician2;
+                        }
 
-        document.getElementById('btnDeconectare').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.replace("index.html");
-            }).catch((error) => {
-                console.error("Eroare delogare:", error);
+                        if (destinatarTehnicianId) {
+                            await addDoc(notificariRef, {
+                                destinatarId: destinatarTehnicianId,
+                                mesaj: `Echipamentul "${dateTichet.echipament}" din aria ta de acoperire a fost actualizat la statusul: "${noulStatus}".`,
+                                citita: false,
+                                data: acum,
+                                dataFormata: dataText
+                            });
+                        }
+
+                        if (uidAdmin) {
+                            await addDoc(notificariRef, {
+                                destinatarId: uidAdmin,
+                                mesaj: `Notificare Management: Tichetul [ID: ${docId}] (${dateTichet.echipament || 'altul'}) are statusul nou: "${noulStatus}".`,
+                                citita: false,
+                                data: acum,
+                                dataFormata: dataText
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error("Eroare execuție flux automat:", error);
+                }
             });
         });
-    </script>
-</body>
-</html>
+
+    }, (error) => {
+        console.error("Eroare ascultare în timp real:", error);
+        document.getElementById('ticheteContainer').innerHTML = "<p style='color: #d9534f; text-align: center;'>Eroare la încărcarea datelor în timp real.</p>";
+    });
+}
