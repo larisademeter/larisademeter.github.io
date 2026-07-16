@@ -78,6 +78,41 @@
         .status-select:focus {
             border-color: #00c2b2; /* Se colorează în Turcoaz la selectare */
         }
+
+        /* Stil pentru bara de filtrare globală */
+        .filter-container {
+            background: #ffffff;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(142, 68, 173, 0.03);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #f1ebf7;
+        }
+
+        .filter-label {
+            font-weight: 700;
+            color: #4a154b;
+            font-size: 0.95em;
+        }
+
+        .filter-select {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 2px solid #e1d5f2;
+            font-weight: 600;
+            color: #6a1b9a;
+            outline: none;
+            cursor: pointer;
+            background-color: #fff;
+            transition: all 0.2s ease;
+        }
+
+        .filter-select:focus {
+            border-color: #00c2b2;
+        }
     </style>
 </head>
 <body>
@@ -114,7 +149,17 @@
     <main class="section">
         <div class="container" style="max-width: 800px; margin-top: 40px; min-height: 60vh;">
             <h2 style="color: #4a154b; margin-bottom: 8px; font-weight: 800;">Intervențiile și Tichetele Mele</h2>
-            <p style="color: #666; margin-bottom: 30px; font-size: 1.05em;">Monitorizează în timp real stadiul solicitărilor tale de service.</p>
+            <p style="color: #666; margin-bottom: 20px; font-size: 1.05em;">Monitorizează în timp real stadiul solicitărilor tale de service.</p>
+            
+            <div class="filter-container">
+                <span class="filter-label">🔍 Filtrează după status:</span>
+                <select id="filtruStatus" class="filter-select">
+                    <option value="toate" selected>Toate tichetele</option>
+                    <option value="Nouă">Tichete noi</option>
+                    <option value="În curs de rezolvare">În curs de rezolvare</option>
+                    <option value="Rezolvată">Tichete rezolvate</option>
+                </select>
+            </div>
             
             <div id="ticheteContainer">
                 <p style="color: #888; text-align: center;">Se încarcă tichetele tale...</p>
@@ -158,6 +203,7 @@
 
         let esteTehnicianSauAdmin = false;
         let primaIncarcareNotificari = true;
+        let queryActivaFirestore = null; // Salvăm interogarea curentă pentru a putea reîmprospăta la schimbarea filtrului
 
         function arataNotificare(mesaj, tip = 'success') {
             const notificareVeche = document.querySelector('.toast-notification');
@@ -244,7 +290,6 @@
         async function determinaRolSiIncarca(user) {
             const email = user.email.toLowerCase();
             const ticheteRef = collection(db, "interventii");
-            let q;
 
             if (email === "tehnician1@licenta.ro" || email === "tehnician2@licenta.ro" || email === "admin@licenta.ro") {
                 esteTehnicianSauAdmin = true;
@@ -253,20 +298,22 @@
             }
 
             if (email === "tehnician1@licenta.ro") {
-                q = query(ticheteRef, where("echipament", "in", ["injectomat", "electrocauter", "monitor_triaj"]));
+                queryActivaFirestore = query(ticheteRef, where("echipament", "in", ["injectomat", "electrocauter", "monitor_triaj"]));
             } else if (email === "tehnician2@licenta.ro") {
-                q = query(ticheteRef, where("echipament", "in", ["infuzomat", "ploscar", "oxigen"]));
+                queryActivaFirestore = query(ticheteRef, where("echipament", "in", ["infuzomat", "ploscar", "oxigen"]));
             } else if (email === "admin@licenta.ro") {
-                q = query(ticheteRef);
+                queryActivaFirestore = query(ticheteRef);
             } else {
-                q = query(ticheteRef, where("userId", "==", user.uid));
+                queryActivaFirestore = query(ticheteRef, where("userId", "==", user.uid));
             }
 
-            afiseazaTichete(q);
+            // Pornim randarea inițială
+            afiseazaTichete(queryActivaFirestore);
         }
 
         function afiseazaTichete(interogare) {
             const container = document.getElementById('ticheteContainer');
+            const filtruStatus = document.getElementById('filtruStatus');
             
             function parseazaData(dataString) {
                 if (!dataString) return new Date(0);
@@ -281,163 +328,196 @@
                 }
             }
             
+            // Ascultăm modificările din baza de date
             onSnapshot(interogare, (querySnapshot) => {
-                container.innerHTML = "";
+                
+                // Această funcție internă se ocupă de desenarea efectivă pe baza opțiunii alese în filtru
+                function randeazaElemente() {
+                    container.innerHTML = "";
+                    const valoareFiltru = filtruStatus.value;
 
-                if (querySnapshot.empty) {
-                    container.innerHTML = `
-                        <div style="background: #fdfbfe; padding: 40px; border-radius: 16px; text-align: center; border: 2px dashed #e1d5f2; color: #7b2cbf;">
-                            <span style="font-size: 2.5em; display:block; margin-bottom:10px;">📋</span>
-                            Nu există nicio intervenție înregistrată în această secțiune.
-                        </div>`;
-                    return;
-                }
-
-                const listaTichete = [];
-                querySnapshot.forEach((docSnap) => {
-                    listaTichete.push({
-                        id: docSnap.id,
-                        ...docSnap.data()
-                    });
-                });
-
-                listaTichete.sort((a, b) => {
-                    return parseazaData(b.data_solicitare) - parseazaData(a.data_solicitare);
-                });
-
-                listaTichete.forEach((dateTichet) => {
-                    const card = document.createElement('div');
-                    card.className = "ticket-card";
-                    
-                    const statusActual = dateTichet.status || 'În așteptare';
-                    const idTichet = dateTichet.id;
-                    const numeEchipament = dateTichet.echipament || 'Echipament Nespecificat';
-
-                    let statusColor = "#008f83"; 
-                    let statusBg = "#e6faf8";    
-                    
-                    if (statusActual === "În curs de rezolvare") {
-                        statusColor = "#9c27b0"; 
-                        statusBg = "#f3e5f5";    
-                    } else if (statusActual === "Nouă") {
-                        statusColor = "#ff4081"; 
-                        statusBg = "#fce4ec";    
+                    if (querySnapshot.empty) {
+                        container.innerHTML = `
+                            <div style="background: #fdfbfe; padding: 40px; border-radius: 16px; text-align: center; border: 2px dashed #e1d5f2; color: #7b2cbf;">
+                                <span style="font-size: 2.5em; display:block; margin-bottom:10px;">📋</span>
+                                Nu există nicio intervenție înregistrată în această secțiune.
+                            </div>`;
+                        return;
                     }
 
-                    let statusElementHTML = "";
-                    if (esteTehnicianSauAdmin) {
-                        statusElementHTML = `
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 0.85em; font-weight: bold; color: #7b2cbf;">Status:</span>
-                                <select class="status-select" data-id="${idTichet}">
-                                    <option value="Nouă" ${statusActual === "Nouă" ? "selected" : ""}>Nouă</option>
-                                    <option value="În curs de rezolvare" ${statusActual === "În curs de rezolvare" ? "selected" : ""}>În curs de rezolvare</option>
-                                    <option value="Rezolvată" ${statusActual === "Rezolvată" ? "selected" : ""}>Rezolvată</option>
-                                </select>
+                    const listaTichete = [];
+                    querySnapshot.forEach((docSnap) => {
+                        const date = docSnap.data();
+                        const statusTichet = date.status || 'În așteptare';
+
+                        // --- FILTRARE INTELIGENTĂ PE CLIENT-SIDE ---
+                        // Dacă utilizatorul a ales altceva în afară de "toate" și nu se potrivește statusul, îl omitem
+                        if (valoareFiltru !== "toate" && statusTichet !== valoareFiltru) {
+                            return; 
+                        }
+
+                        listaTichete.push({
+                            id: docSnap.id,
+                            ...date
+                        });
+                    });
+
+                    // Dacă filtrul selectat a lăsat lista goală
+                    if (listaTichete.length === 0) {
+                        container.innerHTML = `
+                            <div style="background: #ffffff; padding: 40px; border-radius: 16px; text-align: center; border: 1px dashed #e1d5f2; color: #8c7b99; font-weight: 600;">
+                                🔍 Nu există tichete cu statusul "${valoareFiltru}" în această secțiune.
+                            </div>`;
+                        return;
+                    }
+
+                    // Sortare cronologică descrescătoare (cele mai noi primele)
+                    listaTichete.sort((a, b) => {
+                        return parseazaData(b.data_solicitare) - parseazaData(a.data_solicitare);
+                    });
+
+                    listaTichete.forEach((dateTichet) => {
+                        const card = document.createElement('div');
+                        card.className = "ticket-card";
+                        
+                        const statusActual = dateTichet.status || 'În așteptare';
+                        const idTichet = dateTichet.id;
+                        const numeEchipament = dateTichet.echipament || 'Echipament Nespecificat';
+
+                        let statusColor = "#008f83"; 
+                        let statusBg = "#e6faf8";    
+                        
+                        if (statusActual === "În curs de rezolvare") {
+                            statusColor = "#9c27b0"; 
+                            statusBg = "#f3e5f5";    
+                        } else if (statusActual === "Nouă") {
+                            statusColor = "#ff4081"; 
+                            statusBg = "#fce4ec";    
+                        }
+
+                        let statusElementHTML = "";
+                        if (esteTehnicianSauAdmin) {
+                            statusElementHTML = `
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 0.85em; font-weight: bold; color: #7b2cbf;">Status:</span>
+                                    <select class="status-select" data-id="${idTichet}">
+                                        <option value="Nouă" ${statusActual === "Nouă" ? "selected" : ""}>Nouă</option>
+                                        <option value="În curs de rezolvare" ${statusActual === "În curs de rezolvare" ? "selected" : ""}>În curs de rezolvare</option>
+                                        <option value="Rezolvată" ${statusActual === "Rezolvată" ? "selected" : ""}>Rezolvată</option>
+                                    </select>
+                                </div>
+                            `;
+                        } else {
+                            statusElementHTML = `
+                                <span style="background: ${statusBg}; color: ${statusColor}; padding: 6px 14px; border-radius: 50px; font-size: 0.85em; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    ${statusActual}
+                                </span>
+                            `;
+                        }
+
+                        const sectia = dateTichet.sectie ? dateTichet.sectie : "Nespecificată";
+                        const motivul = dateTichet.motiv === "service" ? "Reparație (Defect)" : "Mentenanță periodică";
+                        const dataSolicitare = dateTichet.data_solicitare ? dateTichet.data_solicitare : "Fără dată";
+
+                        card.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+                                <h3 style="margin: 0; color: #4a154b; font-size: 1.35em; font-weight: 800;">🩺 ${numeEchipament}</h3>
+                                ${statusElementHTML}
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <span class="info-badge-turcoaz">🏢 ${dateTichet.clinica || 'Nespecificată'}</span>
+                                <span class="info-badge">📍 Secție: ${sectia}</span>
+                                <span class="info-badge">🔧 Tip: ${motivul}</span>
+                            </div>
+
+                            <div style="background: #faf8fc; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 3px solid #ff4081;">
+                                <strong style="color: #4a154b; font-size: 0.9em; display: block; margin-bottom: 5px;">Descriere detaliată problemă:</strong>
+                                <p style="margin: 0; color: #444; line-height: 1.6; font-size: 0.95em;">${dateTichet.mesaj || 'Fără detalii suplimentare înregistrate.'}</p>
+                            </div>
+
+                            <div style="padding-top: 12px; border-top: 1px dashed #e1d5f2; display: flex; justify-content: space-between; font-size: 0.8em; color: #8c7b99; font-weight: 600;">
+                                <span>🆔 ID Solicitare: ${idTichet}</span>
+                                <span>📅 Data: ${dataSolicitare}</span>
                             </div>
                         `;
-                    } else {
-                        statusElementHTML = `
-                            <span style="background: ${statusBg}; color: ${statusColor}; padding: 6px 14px; border-radius: 50px; font-size: 0.85em; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
-                                ${statusActual}
-                            </span>
-                        `;
-                    }
-
-                    const sectia = dateTichet.sectie ? dateTichet.sectie : "Nespecificată";
-                    const motivul = dateTichet.motiv === "service" ? "Reparație (Defect)" : "Mentenanță periodică";
-                    const dataSolicitare = dateTichet.data_solicitare ? dateTichet.data_solicitare : "Fără dată";
-
-                    card.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
-                            <h3 style="margin: 0; color: #4a154b; font-size: 1.35em; font-weight: 800;">🩺 ${numeEchipament}</h3>
-                            ${statusElementHTML}
-                        </div>
-
-                        <div style="margin-bottom: 15px;">
-                            <span class="info-badge-turcoaz">🏢 ${dateTichet.clinica || 'Nespecificată'}</span>
-                            <span class="info-badge">📍 Secție: ${sectia}</span>
-                            <span class="info-badge">🔧 Tip: ${motivul}</span>
-                        </div>
-
-                        <div style="background: #faf8fc; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 3px solid #ff4081;">
-                            <strong style="color: #4a154b; font-size: 0.9em; display: block; margin-bottom: 5px;">Descriere detaliată problemă:</strong>
-                            <p style="margin: 0; color: #444; line-height: 1.6; font-size: 0.95em;">${dateTichet.mesaj || 'Fără detalii suplimentare înregistrate.'}</p>
-                        </div>
-
-                        <div style="padding-top: 12px; border-top: 1px dashed #e1d5f2; display: flex; justify-content: space-between; font-size: 0.8em; color: #8c7b99; font-weight: 600;">
-                            <span>🆔 ID Solicitare: ${idTichet}</span>
-                            <span>📅 Data: ${dataSolicitare}</span>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                });
-
-                // --- URMEAZĂ INTERACȚIUNEA DROPDOWN ---
-                document.querySelectorAll('.status-select').forEach(select => {
-                    select.addEventListener('change', async (e) => {
-                        const docId = e.target.getAttribute('data-id');
-                        const noulStatus = e.target.value;
-                        
-                        try {
-                            const docRef = doc(db, "interventii", docId);
-                            await updateDoc(docRef, { status: noulStatus });
-
-                            const snapshotTichet = await getDoc(docRef);
-                            if (snapshotTichet.exists()) {
-                                const dateTichet = snapshotTichet.data();
-                                const notificariRef = collection(db, "notificari");
-                                const acum = new Date();
-                                const dataText = acum.toLocaleString('ro-RO');
-
-                                const uidAdmin = "Pva0NvpLRbWmHw7iApCPrTsRoMx2";       
-                                const uidTehnician1 = "xHRCQZ2QwiN7O2Mm7tqh3Jnhf8x1";  
-                                const uidTehnician2 = "lBnPTEXqOWY2GiuwoqVDFFGX2lL2";  
-
-                                const echipamentCurent = (dateTichet.echipament || "").toLowerCase();
-
-                                if (dateTichet.userId) {
-                                    await addDoc(notificariRef, {
-                                        destinatarId: dateTichet.userId,
-                                        mesaj: `Statusul solicitării dumneavoastră pentru "${dateTichet.echipament || 'Echipament'}" a fost modificat în: "${noulStatus}".`,
-                                        citita: false,
-                                        data: acum,
-                                        dataFormata: dataText
-                                    });
-                                }
-
-                                let destinatarTehnicianId = null;
-                                if (["injectomat", "electrocauter", "monitor_triaj"].includes(echipamentCurent)) {
-                                    destinatarTehnicianId = uidTehnician1;
-                                } else if (["infuzomat", "ploscar", "oxigen"].includes(echipamentCurent)) {
-                                    destinatarTehnicianId = uidTehnician2;
-                                }
-
-                                if (destinatarTehnicianId) {
-                                    await addDoc(notificariRef, {
-                                        destinatarId: destinatarTehnicianId,
-                                        mesaj: `Echipamentul "${dateTichet.echipament}" din aria ta de acoperire a fost actualizat la statusul: "${noulStatus}".`,
-                                        citita: false,
-                                        data: acum,
-                                        dataFormata: dataText
-                                    });
-                                }
-
-                                if (uidAdmin) {
-                                    await addDoc(notificariRef, {
-                                        destinatarId: uidAdmin,
-                                        mesaj: `Notificare Management: Tichetul [ID: ${docId}] (${dateTichet.echipament || 'altul'}) are statusul nou: "${noulStatus}".`,
-                                        citita: false,
-                                        data: acum,
-                                        dataFormata: dataText
-                                    });
-                                }
-                            }
-                        } catch (error) {
-                            console.error("Eroare execuție flux automat:", error);
-                        }
+                        container.appendChild(card);
                     });
-                });
+
+                    // Re-atașăm ascultătorii pe dropdown-urile de status după randare
+                    document.querySelectorAll('.status-select').forEach(select => {
+                        select.addEventListener('change', async (e) => {
+                            const docId = e.target.getAttribute('data-id');
+                            const noulStatus = e.target.value;
+                            
+                            try {
+                                const docRef = doc(db, "interventii", docId);
+                                await updateDoc(docRef, { status: noulStatus });
+
+                                const snapshotTichet = await getDoc(docRef);
+                                if (snapshotTichet.exists()) {
+                                    const dateTichet = snapshotTichet.data();
+                                    const notificariRef = collection(db, "notificari");
+                                    const acum = new Date();
+                                    const dataText = acum.toLocaleString('ro-RO');
+
+                                    const uidAdmin = "Pva0NvpLRbWmHw7iApCPrTsRoMx2";       
+                                    const uidTehnician1 = "xHRCQZ2QwiN7O2Mm7tqh3Jnhf8x1";  
+                                    const uidTehnician2 = "lBnPTEXqOWY2GiuwoqVDFFGX2lL2";  
+
+                                    const echipamentCurent = (dateTichet.echipament || "").toLowerCase();
+
+                                    if (dateTichet.userId) {
+                                        await addDoc(notificariRef, {
+                                            destinatarId: dateTichet.userId,
+                                            mesaj: `Statusul solicitării dumneavoastră pentru "${dateTichet.echipament || 'Echipament'}" a fost modificat în: "${noulStatus}".`,
+                                            citita: false,
+                                            data: acum,
+                                            dataFormata: dataText
+                                        });
+                                    }
+
+                                    let destinatarTehnicianId = null;
+                                    if (["injectomat", "electrocauter", "monitor_triaj"].includes(echipamentCurent)) {
+                                        destinatarTehnicianId = uidTehnician1;
+                                    } else if (["infuzomat", "ploscar", "oxigen"].includes(echipamentCurent)) {
+                                        destinatarTehnicianId = uidTehnician2;
+                                    }
+
+                                    if (destinatarTehnicianId) {
+                                        await addDoc(notificariRef, {
+                                            destinatarId: destinatarTehnicianId,
+                                            mesaj: `Echipamentul "${dateTichet.echipament}" din aria ta de acoperire a fost actualizat la statusul: "${noulStatus}".`,
+                                            citita: false,
+                                            data: acum,
+                                            dataFormata: dataText
+                                        });
+                                    }
+
+                                    if (uidAdmin) {
+                                        await addDoc(notificariRef, {
+                                            destinatarId: uidAdmin,
+                                            mesaj: `Notificare Management: Tichetul [ID: ${docId}] (${dateTichet.echipament || 'altul'}) are statusul nou: "${noulStatus}".`,
+                                            citita: false,
+                                            data: acum,
+                                            dataFormata: dataText
+                                        });
+                                    }
+                                }
+                            } catch (error) {
+                                console.error("Eroare execuție flux automat:", error);
+                            }
+                        });
+                    });
+                }
+
+                // Apelăm randarea la fiecare modificare din baza de date
+                randeazaElemente();
+
+                // Scoatem ascultătorul vechi de eveniment element HTML (dacă exista) ca să nu avem dubluri de execuție
+                filtruStatus.removeEventListener('change', randeazaElemente);
+                // Atașăm ascultătorul pe caseta de sortare: când schimbi opțiunea, se re-randează instant
+                filtruStatus.addEventListener('change', randeazaElemente);
 
             }, (error) => {
                 console.error("Eroare ascultare în timp real:", error);
