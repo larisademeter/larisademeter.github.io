@@ -222,14 +222,14 @@
                     const acum = new Date();
                     const dataText = acum.toLocaleString('ro-RO');
 
-                    // UID-urile tale oficiale din sistem:
+                    // UID-urile oficiale din sistem (Inclusiv cel nou de client pentru referinta curata):
                     const uidAdmin = "Pva0NvpLRbWmHw7iApCPrTsRoMx2";       
                     const uidTehnician1 = "xHRCQZ2QwiN7O2Mm7tqh3Jnhf8x1";  
                     const uidTehnician2 = "lBnPTEXqOWY2GiuwoqVDFFGX2lL2";  
 
                     const echipamentCheie = echipamentVal.toLowerCase();
 
-                    // A. Trimitere automată către Administrator (Adminul le primește pe toate, inclusiv categoria 'altul')
+                    // A. Trimitem notificare către Admin
                     await addDoc(notificariRef, {
                         destinatarId: uidAdmin,
                         mesaj: `Manager: A fost înregistrat un tichet NOU pentru aparatul "${echipamentVal}" (Locație: ${clinicaVal} | Secție: ${sectieVal || 'Nespecificată'}).`,
@@ -238,7 +238,7 @@
                         dataFormata: dataText
                     });
 
-                    // B. Trimitere automată către Tehnicianul dedicat pe baza grupării echipamentelor
+                    // B. Trimitem notificare către Tehnicianul dedicat
                     let tehnicianIdResponsabil = null;
                     if (["injectomat", "electrocauter", "monitor_triaj"].includes(echipamentCheie)) {
                         tehnicianIdResponsabil = uidTehnician1;
