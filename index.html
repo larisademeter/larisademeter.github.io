@@ -46,7 +46,7 @@
                     Soluții integrate de suport tehnic și mentenanță pentru o <strong>gamă variată de aparate medicale</strong>. 
                     Asigurăm continuitatea activității clinicii dumneavoastră prin profesionalism și promptitudine.
                 </p>
-                <div class="hero-btns">
+                <div class="hero-btns" id="heroBtnContainer">
                     <a href="contact.html" class="btn-hero">Solicită Intervenție</a>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                     <article class="card card-accent-3">
                         <div class="card-icon">📋</div>
                         <h3>Verificări Tehnice</h3>
-                        <p>La orice intervenție se vor face verificări riguroase, însoțite de buletine autorizate, pentru a demonstra buna funcționare și siguranța deplină.</p>
+                        <p>La orice intervention se vor face verificări riguroase, însoțite de buletine autorizate, pentru a demonstra buna funcționare și siguranța deplină.</p>
                     </article>
                 </div>
             </div>
@@ -131,10 +131,11 @@
         const navTicheteBtn = document.getElementById('navTicheteBtn');
         const navDeconectareBtn = document.getElementById('navDeconectareBtn');
         const navBellBtn = document.getElementById('navBellBtn');
+        const heroBtnContainer = document.getElementById('heroBtnContainer');
+        
         let ascultatorBadge = null;
         let primaIncarcareNotificari = true;
 
-        // Funcția de desenare a alertelor Toast pe ecranul principal
         function arataNotificare(mesaj, tip = 'success') {
             const notificareVeche = document.querySelector('.toast-notification');
             if (notificareVeche) notificareVeche.remove();
@@ -150,7 +151,7 @@
             if (tip === 'success') {
                 toast.style.background = '#00c2b2';
             } else if (tip === 'alert') {
-                toast.style.background = '#ff003c'; // Roșu strident de atenționare
+                toast.style.background = '#ff003c';
             } else {
                 toast.style.background = '#ff4081';
             }
@@ -182,6 +183,17 @@
                 if (navDeconectareBtn) navDeconectareBtn.classList.remove('nav-hidden');
                 if (navBellBtn) navBellBtn.classList.remove('nav-hidden');
 
+                const email = user.email.toLowerCase();
+
+                // --- SCHIMBARE DINAMICĂ BUTON CENTRAL (HERO) ---
+                if (email === "admin@licenta.ro" || email === "tehnician1@licenta.ro" || email === "tehnician2@licenta.ro") {
+                    // Dacă e admin sau tehnician, punem buton către panoul lor de tichete
+                    heroBtnContainer.innerHTML = `<a href="tichete.html" class="btn-hero">Panou Gestiune Tichete</a>`;
+                } else {
+                    // Dacă e un client logat, îi lăsăm butonul de solicitare service
+                    heroBtnContainer.innerHTML = `<a href="contact.html" class="btn-hero">Solicită Intervenție</a>`;
+                }
+
                 // Pornim monitorizarea în timp real a notificărilor necitite
                 const notificariRef = collection(db, "notificari");
                 const q = query(notificariRef, where("destinatarId", "==", user.uid), where("citita", "==", false));
@@ -190,7 +202,6 @@
                     const badge = document.getElementById('bellBadge');
                     const necititeCount = querySnapshot.size;
                     
-                    // 1. Actualizăm cifra din badge-ul roșu din header
                     if (badge) {
                         if (necititeCount > 0) {
                             badge.innerText = necititeCount;
@@ -200,17 +211,14 @@
                         }
                     }
 
-                    // 2. Declanșăm popup-ul vizual direct pe ecranul principal dacă apare o notificare nouă
                     if (!primaIncarcareNotificari) {
                         querySnapshot.docChanges().forEach((change) => {
                             if (change.type === "added") {
                                 const dateNotif = change.doc.data();
-                                
                                 let tipAlerta = 'success';
                                 if (dateNotif.mesaj.includes("Nouă") || dateNotif.mesaj.includes("NUĂ") || dateNotif.mesaj.includes("înregistrată")) {
                                     tipAlerta = 'alert';
                                 }
-                                
                                 arataNotificare(dateNotif.mesaj, tipAlerta);
                             }
                         });
@@ -224,6 +232,9 @@
                 if (navDeconectareBtn) navDeconectareBtn.classList.add('nav-hidden');
                 if (navBellBtn) navBellBtn.classList.add('nav-hidden');
                 
+                // Dacă nu e nimeni logat, butonul principal trimite default către logare/contact
+                heroBtnContainer.innerHTML = `<a href="contact.html" class="btn-hero">Solicită Intervenție</a>`;
+
                 if (ascultatorBadge) {
                     ascultatorBadge();
                     ascultatorBadge = null;
