@@ -108,21 +108,25 @@
 
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, parola);
-                console.log("Logat cu succes:", userCredential.user.email);
+                const emailLogat = userCredential.user.email.toLowerCase().trim();
                 
-                // Redirecționare inteligentă pe bază de rol
-                const emailLogat = userCredential.user.email.toLowerCase();
-
-                if (emailLogat === "admin@licenta.ro" || emailLogat === "tehnician1@licenta.ro" || emailLogat === "tehnician2@licenta.ro") {
-                    // Adminul și tehnicienii sunt redirecționați spre gestionarea generală
+                console.log("Autentificare reușită pentru email-ul:", emailLogat);
+                
+                // Redirecționare strictă pe bază de roluri
+                if (emailLogat === "admin@licenta.ro" || 
+                    emailLogat === "tehnician1@licenta.ro" || 
+                    emailLogat === "tehnician2@licenta.ro") {
+                    
+                    console.log("Direcționare echipa tehnică către: tichete.html");
                     window.location.replace("tichete.html");
                 } else {
-                    // Clienții sunt redirecționați direct pe formularul de trimitere solicitare
+                    // ORICE CLIENT (inclusiv client@licenta.ro și test@licenta06.05.26.ro) merge la contact
+                    console.log("Direcționare client către formularul de solicitare: contact.html");
                     window.location.replace("contact.html");
                 }
 
             } catch (error) {
-                console.error("Eroare logare:", error);
+                console.error("Eroare la autentificare:", error);
                 if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
                     alert("Email-ul sau parola este incorectă.");
                 } else {
