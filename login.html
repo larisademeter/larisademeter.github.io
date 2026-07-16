@@ -110,8 +110,16 @@
                 const userCredential = await signInWithEmailAndPassword(auth, email, parola);
                 console.log("Logat cu succes:", userCredential.user.email);
                 
-                // Trimite utilizatorul la pagina cu tichete după logare
-                window.location.href = "tichete.html";
+                // Redirecționare inteligentă pe bază de rol
+                const emailLogat = userCredential.user.email.toLowerCase();
+
+                if (emailLogat === "admin@licenta.ro" || emailLogat === "tehnician1@licenta.ro" || emailLogat === "tehnician2@licenta.ro") {
+                    // Adminul și tehnicienii sunt redirecționați spre gestionarea generală
+                    window.location.replace("tichete.html");
+                } else {
+                    // Clienții sunt redirecționați direct pe formularul de trimitere solicitare
+                    window.location.replace("contact.html");
+                }
 
             } catch (error) {
                 console.error("Eroare logare:", error);
@@ -125,4 +133,3 @@
     </script>
 </body>
 </html>
-
